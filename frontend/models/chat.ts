@@ -1,16 +1,10 @@
 import { CitationSource } from "./citation";
 import { SprintStory } from "./project";
 
-export type MessageRole = "ai" | "user";
-
-export interface Message {
-  id: string;
-  role: MessageRole;
+export interface AIResponsePayload {
   content: string;
   citations?: CitationSource[];
   hasDiagram?: boolean;
   hasImageCard?: boolean;
   sprintStories?: SprintStory[];
-  isError?: boolean;
-  timestamp: Date;
 }

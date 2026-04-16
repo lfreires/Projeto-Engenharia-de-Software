@@ -8,16 +8,18 @@ import {
   GitBranch,
   MessageSquare,
   Settings,
+  GitCommitHorizontal,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { id: "users", label: "Usuários e Projetos", icon: Users, active: false },
-  { id: "ingestion", label: "Ingestão de Dados", icon: Database, active: false },
-  { id: "reports", label: "Relatórios", icon: FileBarChart2, active: false },
-  { id: "presentations", label: "Apresentações", icon: MonitorPlay, active: false },
-  { id: "diagrams", label: "Diagramas Técnicos", icon: GitBranch, active: false },
-  { id: "consultation", label: "Consulta", icon: MessageSquare, active: true },
+  { id: "users",        label: "Usuários e Projetos",  icon: Users,         active: false },
+  { id: "ingestion",    label: "Ingestão de Dados",    icon: Database,      active: false },
+  { id: "reports",      label: "Relatórios",           icon: FileBarChart2, active: false },
+  { id: "presentations",label: "Apresentações",        icon: MonitorPlay,   active: false },
+  { id: "diagrams",     label: "Diagramas Técnicos",   icon: GitBranch,     active: false },
+  { id: "consultation", label: "Consulta",             icon: MessageSquare, active: true  },
 ] as const;
+
 
 export function DocAISidebar() {
   return (
@@ -81,12 +83,11 @@ export function DocAISidebar() {
                 </div>
               );
             }
-
             return (
               <div
                 key={item.id}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-                style={{ cursor: "default", opacity: 0.45 }}
+                style={{ cursor: "default", opacity: 0.4 }}
               >
                 <div
                   className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
@@ -102,15 +103,22 @@ export function DocAISidebar() {
           })}
         </div>
 
+        {/* Divider */}
         <div className="my-4 mx-3" style={{ height: "0.5px", backgroundColor: "#e8eaf0" }} />
 
-        <div
-          className="mx-3 px-3 py-2.5 rounded-lg"
-          style={{ backgroundColor: "#f7f8fc", border: "0.5px solid #e8eaf0" }}
-        >
-          <p style={{ fontSize: "11px", color: "#9095b0", lineHeight: 1.5 }}>
-            Outros módulos estão disponíveis conforme permissão de acesso da sua equipe.
-          </p>
+        {/* Module access note */}
+        <div className="mx-3">
+          <div
+            className="px-3 py-2.5 rounded-lg"
+            style={{ backgroundColor: "#f7f8fc", border: "0.5px solid #e8eaf0" }}
+          >
+            <div className="flex items-start gap-2">
+              <GitCommitHorizontal size={11} style={{ color: "#b0b5c8", marginTop: "2px", flexShrink: 0 }} />
+              <p style={{ fontSize: "10.5px", color: "#9095b0", lineHeight: 1.5, margin: 0 }}>
+                Outros módulos disponíveis conforme permissão de acesso da equipe.
+              </p>
+            </div>
+          </div>
         </div>
       </nav>
 
@@ -126,12 +134,12 @@ export function DocAISidebar() {
           JS
         </div>
         <div className="flex-1 min-w-0">
-          <p style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>João Silva</p>
-          <p style={{ fontSize: "11px", color: "#a0a4b8" }}>Tech Lead</p>
+          <p style={{ fontSize: "13px", fontWeight: 600, color: "#111827", margin: 0 }}>João Silva</p>
+          <p style={{ fontSize: "11px", color: "#a0a4b8", margin: 0 }}>Tech Lead</p>
         </div>
         <button
           className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ color: "#c0c4d6" }}
+          style={{ color: "#c0c4d6", background: "none", border: "none", cursor: "pointer" }}
           title="Configurações"
         >
           <Settings size={14} />

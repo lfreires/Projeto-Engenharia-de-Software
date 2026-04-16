@@ -2,14 +2,23 @@ import React from "react";
 import { Message } from "@/models/message";
 import { MessageBubble } from "@/views/components/MessageBubble";
 import { TypingIndicator } from "@/views/components/TypingIndicator";
+import { SuggestedQuestions } from "@/views/components/SuggestedQuestions";
 
 interface ChatMessagesProps {
   messages: Message[];
   isTyping: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
+  onSuggestedQuestion: (question: string) => void;
 }
 
-export function ChatMessages({ messages, isTyping, messagesEndRef }: ChatMessagesProps) {
+export function ChatMessages({
+  messages,
+  isTyping,
+  messagesEndRef,
+  onSuggestedQuestion,
+}: ChatMessagesProps) {
+  const showSuggestions = messages.length === 1 && !isTyping;
+
   return (
     <div
       className="flex-1 overflow-y-auto px-6 py-6"
@@ -26,6 +35,10 @@ export function ChatMessages({ messages, isTyping, messagesEndRef }: ChatMessage
       {messages.map((msg) => (
         <MessageBubble key={msg.id} message={msg} />
       ))}
+
+      {showSuggestions && (
+        <SuggestedQuestions onSelect={onSuggestedQuestion} />
+      )}
 
       {isTyping && <TypingIndicator />}
 

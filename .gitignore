@@ -46,3 +46,6 @@ vite.config.ts.timestamp-*
 .eslintcache
 .stylelintcache
 .cache/
+
+# Claude Code (local settings — não commitar)
+.claude/settings.local.json
