@@ -1,7 +1,7 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
 
-const SUGGESTIONS = [
+const SUGGESTED_QUESTIONS = [
   "Resuma o projeto",
   "Mostre a arquitetura da solução",
   "Quais são as histórias do sprint atual?",
@@ -27,7 +27,7 @@ export function SuggestedQuestions({ onSelect }: SuggestedQuestionsProps) {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-        {SUGGESTIONS.map((q) => (
+        {SUGGESTED_QUESTIONS.map((q) => (
           <button
             key={q}
             onClick={() => onSelect(q)}

@@ -1,6 +1,6 @@
-# DocAI — Plataforma de Consulta Inteligente de Documentação
+# Projeto - Engenharia de Software
 
-> MVP do módulo de **Consulta ao Projeto** de uma plataforma de documentação inteligente voltada para equipes de engenharia de software.
+> MVP do módulo de **Consulta ao Projeto**.
 
 ---
 
@@ -118,6 +118,25 @@ O projeto segue uma abordagem inspirada em **MVC adaptado para frontend moderno*
 | `utils/` | Funções puras e helpers reutilizáveis |
 
 Toda a lógica do chat vive em `useChat.ts`. Os componentes são puramente apresentacionais e recebem dados via props. A comunicação com a IA é abstraída em `chatService.ts`, com uma interface que não muda ao integrar o backend real.
+
+---
+
+## Perguntas suportadas pelo mock
+
+As seguintes perguntas ativam respostas:
+
+| Pergunta | Tipo de resposta |
+|---|---|
+| Resuma o projeto | Visão geral + card visual |
+| Mostre a arquitetura da solução | Diagrama de camadas + card de arquitetura |
+| Quais são as histórias do sprint atual? | Cards do Sprint 7 com status e pontuação |
+| Como funciona a autenticação? | Explicação JWT + citações de auth-flow.md e swagger.yaml |
+| Quais são os módulos principais? | Lista dos 4 microserviços + diagrama |
+| Quais arquivos devo ler primeiro? | Guia de onboarding com ordem recomendada |
+| Me mostre a documentação da API | Resumo OpenAPI + citação do swagger.yaml |
+| Como está o banco de dados? | Resumo do schema PostgreSQL + citação do db-schema.sql |
+
+Qualquer outra pergunta retorna uma resposta de fallback coerente.
 
 ---
 
