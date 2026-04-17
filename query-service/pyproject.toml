@@ -1,0 +1,19 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "--cov=app --cov-report=term-missing --cov-fail-under=80 -v"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+omit = ["app/main.py", "tests/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+ignore_missing_imports = true
