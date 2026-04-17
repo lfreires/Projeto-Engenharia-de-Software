@@ -1,0 +1,15 @@
+# Copie para terraform.tfvars e preencha os valores reais (NUNCA commitar terraform.tfvars)
+resource_group_name = "rg-docai-prod"
+location            = "eastus"
+project_prefix      = "mack"
+
+# Obter em https://console.groq.com → API Keys (sem cartão de crédito)
+groq_api_key = "gsk_XXXXXXXX"
+
+# Obtido após terraform apply na primeira passagem (az search admin-key show ...)
+azure_search_key = "XXXXXXXX"
+
+# Token Bearer interno — gere com: openssl rand -hex 32
+bearer_token = "XXXXXXXX"
+
+vite_project_id = "ecommerce-api"
