@@ -5,6 +5,7 @@ version: "3.9"
 #
 # Uso rápido:
 #   cp query-service/.env.example query-service/.env   # preencher GROQ_API_KEY etc.
+#   cp frontend/.env.local.example frontend/.env.local # opcional (sobrescreve defaults)
 #   docker compose up --build
 #
 # Frontend:  http://localhost:3000

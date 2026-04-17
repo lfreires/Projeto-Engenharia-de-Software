@@ -128,7 +128,8 @@ Acesse `http://localhost:8000/docs` para a interface Swagger interativa.
 ## 4. Frontend Local (sem Docker)
 
 ```bash
-# Na raiz do repositório
+cd frontend
+
 cp .env.local.example .env.local
 # Edite VITE_PROJECT_ID e VITE_BEARER_TOKEN se necessário
 
@@ -285,5 +286,6 @@ curl -X DELETE -H "Authorization: Bearer dev-token" \
 | `404 PROJECT_NOT_FOUND` no chat | Nenhum documento indexado para o `project_id` | Verificar `VITE_PROJECT_ID` e se o módulo de Ingestão indexou documentos com o mesmo ID |
 | `503 LLM_UNAVAILABLE` | GROQ_API_KEY inválida ou Groq fora do ar | Verificar chave em console.groq.com; o fallback para llama-3.1-8b é automático no 429 |
 | Frontend mostra erro de CORS | Backend não está rodando | `docker compose up` ou `uvicorn app.main:app` |
-| `pytest: collected 0 items` | Ambiente virtual não ativo | `source .venv/bin/activate` |
-| `ImportError: sentence_transformers` | Dependência não instalada | `pip install -r requirements.txt` |
+| `pytest: collected 0 items` | Ambiente virtual não ativo | `source .venv/bin/activate` (rodar de dentro de `query-service/`) |
+| `ImportError: sentence_transformers` | Dependência não instalada | `pip install -r requirements.txt` (dentro de `query-service/`) |
+| `Cannot find module` no frontend | `npm install` rodado na raiz em vez de `frontend/` | `cd frontend && npm install` |

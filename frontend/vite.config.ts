@@ -10,7 +10,8 @@ function figmaAssetResolver() {
     resolveId(id) {
       if (id.startsWith('figma:asset/')) {
         const filename = id.replace('figma:asset/', '')
-        return path.resolve(__dirname, 'frontend/assets', filename)
+        // __dirname is now frontend/ — assets live at the same level
+        return path.resolve(__dirname, 'assets', filename)
       }
     },
   }
@@ -26,8 +27,8 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      // Alias @ to the frontend directory
-      '@': path.resolve(__dirname, './frontend'),
+      // @ resolves to the frontend/ directory (now the Vite project root)
+      '@': path.resolve(__dirname, '.'),
     },
   },
 

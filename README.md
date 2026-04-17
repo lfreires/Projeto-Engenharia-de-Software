@@ -184,12 +184,8 @@ Projeto-Engenharia-de-Software/
 ├── .github/workflows/
 │   └── ci-cd.yml                  # Pipeline único → produção
 │
-├── Dockerfile                     # Frontend: Node 20 → nginx (multi-stage)
+├── Dockerfile                     # Frontend: Node 20 → nginx (multi-stage); context = repo root
 ├── docker-compose.yml             # MVP local: backend + frontend
-├── vite.config.ts                 # Vite config + proxy /api → :8000
-├── index.html
-├── package.json
-└── .env.local.example             # Variáveis do frontend para dev local
 ```
 
 ---
@@ -253,14 +249,15 @@ uvicorn app.main:app --reload --port 8000
 ### Frontend
 
 ```bash
-# Na raiz do repositório
-cp .env.local.example .env.local   # ajustar se necessário
+cd frontend
+
+cp .env.local.example .env.local   # ajustar VITE_PROJECT_ID / VITE_BEARER_TOKEN se necessário
 
 npm install
 npm run dev                        # http://localhost:5173
 ```
 
-> O Vite proxia `/api/*` → `http://localhost:8000` automaticamente (configurado em `vite.config.ts`).
+> O Vite proxia `/api/*` → `http://localhost:8000` automaticamente (configurado em `frontend/vite.config.ts`).
 
 ---
 
@@ -281,7 +278,7 @@ npm run dev                        # http://localhost:5173
 | `MAX_CONTEXT_TOKENS` | Não | `2000` | Limite de tokens no contexto RAG |
 | `MAX_HISTORY_TURNS` | Não | `5` | Turnos de histórico enviados ao LLM |
 
-### Frontend (`/.env.local`)
+### Frontend (`frontend/.env.local`)
 
 | Variável | Padrão | Descrição |
 |---|---|---|
