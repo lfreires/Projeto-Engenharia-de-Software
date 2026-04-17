@@ -1,0 +1,52 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DocAI — MVP local
+#
+# Uso rápido:
+#   cp query-service/.env.example query-service/.env   # preencher GROQ_API_KEY etc.
+#   docker compose up --build
+#
+# Frontend:  http://localhost:3000
+# Backend:   http://localhost:8000
+# API docs:  http://localhost:8000/docs
+# Health:    http://localhost:8000/api/v1/query/health
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── Backend: FastAPI + RAG pipeline ────────────────────────────────────────
+  backend:
+    build:
+      context: ./query-service
+      dockerfile: Dockerfile
+    container_name: docai-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./query-service/.env
+    environment:
+      # Override defaults for local dev
+      BEARER_TOKEN: ${BEARER_TOKEN:-dev-token}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/query/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s   # sentence-transformers needs time to load
+    restart: unless-stopped
+
+  # ── Frontend: React/Vite → nginx ───────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_PROJECT_ID: ${VITE_PROJECT_ID:-ecommerce-api}
+        VITE_BEARER_TOKEN: ${BEARER_TOKEN:-dev-token}
+    container_name: docai-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
