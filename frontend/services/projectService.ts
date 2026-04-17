@@ -1,5 +1,19 @@
 import { Project, ProjectMaterial } from "@/models/project";
 
+// ─── Config ───────────────────────────────────────────────────────────────────
+
+/**
+ * The active project ID comes from the build-time env var VITE_PROJECT_ID.
+ * Set it in .env.local to match the project_id used when documents were indexed.
+ * Default matches the demo project used during development.
+ */
+export const PROJECT_ID: string = import.meta.env.VITE_PROJECT_ID ?? "ecommerce-api";
+
+// ─── Static project metadata ──────────────────────────────────────────────────
+// This data describes the project shell shown in the UI (header, sidebar).
+// The actual document content lives in Azure AI Search (indexed by the Ingestion module).
+// Update these values to reflect your real project.
+
 const MATERIALS: ProjectMaterial[] = [
   {
     id: "mat-01",
@@ -84,7 +98,7 @@ const MATERIALS: ProjectMaterial[] = [
 ];
 
 export const CURRENT_PROJECT: Project = {
-  id: "ecommerce-api",
+  id: PROJECT_ID,
   name: "E-commerce API",
   description: "Plataforma de e-commerce com arquitetura de microserviços para alto volume transacional.",
   stack: ["Node.js", "React", "PostgreSQL", "Kafka", "Kong"],

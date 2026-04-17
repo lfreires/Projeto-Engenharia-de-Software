@@ -23,6 +23,7 @@ export function ChatArea({ materialsCount, showMaterials, onToggleMaterials }: C
     handleKeyDown,
     handleInput,
     clearChat,
+    submitFeedback,
   } = useChat();
 
   const project = getCurrentProject();
@@ -42,6 +43,7 @@ export function ChatArea({ materialsCount, showMaterials, onToggleMaterials }: C
         isTyping={isTyping}
         messagesEndRef={messagesEndRef}
         onSuggestedQuestion={handleSuggest}
+        onFeedback={submitFeedback}
       />
 
       <ChatInput
