@@ -105,6 +105,49 @@ npm run build
 
 ---
 
+## Arquitetura do sistema (frontend + backend)
+
+Diagrama considerando o frontend da branch `main` e o backend da branch `feat/productionize`.
+
+```mermaid
+graph TB
+    subgraph Cliente
+        U([Usuário])
+        FE["Frontend React (Vite SPA)"]
+    end
+
+    subgraph Backend["query-service (FastAPI :8000)"]
+        R[Router /api/v1/query]
+        RAG[RAG Pipeline]
+        EMB[Embedder local (all-MiniLM-L6-v2)]
+        RET[Retriever]
+        LLM[LLM Client (Groq)]
+        R --> RAG
+        RAG --> EMB
+        RAG --> RET
+        RAG --> LLM
+    end
+
+    subgraph Azure
+        SEARCH[(Azure AI Search)]
+        KV[Key Vault]
+    end
+
+    subgraph Groq
+        G70["llama-3.3-70b-versatile"]
+        G8["llama-3.1-8b-instant (fallback)"]
+    end
+
+    U -->|pergunta| FE
+    FE -->|"POST /api/v1/query/chat"| R
+    RET -->|"vector search"| SEARCH
+    LLM -->|"chat completion"| G70
+    G70 -.->|"429"| G8
+    KV -->|secret| LLM
+    R -->|"resposta + citações"| FE
+    FE -->|resposta| U
+```
+
 ## Arquitetura de frontend
 
 O projeto segue uma abordagem inspirada em **MVC adaptado para frontend moderno**:
