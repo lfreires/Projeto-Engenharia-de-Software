@@ -107,7 +107,7 @@ npm run build
 
 ## Arquitetura do sistema (frontend + backend)
 
-Diagrama considerando o frontend da branch `main` e o backend da branch `feat/productionize`.
+Diagrama considerando o frontend atual e o backend publicado (query-service).
 
 ```mermaid
 graph TB
