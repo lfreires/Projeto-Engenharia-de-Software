@@ -1,5 +1,5 @@
 import React from "react";
-import { Message } from "@/models/message";
+import { FeedbackRating, Message } from "@/models/message";
 import { MessageBubble } from "@/views/components/MessageBubble";
 import { TypingIndicator } from "@/views/components/TypingIndicator";
 import { SuggestedQuestions } from "@/views/components/SuggestedQuestions";
@@ -9,6 +9,7 @@ interface ChatMessagesProps {
   isTyping: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   onSuggestedQuestion: (question: string) => void;
+  onFeedback: (messageId: string, rating: FeedbackRating) => void;
 }
 
 export function ChatMessages({
@@ -16,6 +17,7 @@ export function ChatMessages({
   isTyping,
   messagesEndRef,
   onSuggestedQuestion,
+  onFeedback,
 }: ChatMessagesProps) {
   const showSuggestions = messages.length === 1 && !isTyping;
 
@@ -33,7 +35,7 @@ export function ChatMessages({
       </div>
 
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} />
+        <MessageBubble key={msg.id} message={msg} onFeedback={onFeedback} />
       ))}
 
       {showSuggestions && (

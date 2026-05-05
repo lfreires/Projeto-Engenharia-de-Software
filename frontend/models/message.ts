@@ -3,6 +3,8 @@ import { SprintStory } from "./project";
 
 export type MessageRole = "ai" | "user";
 
+export type FeedbackRating = "positive" | "negative";
+
 export interface Message {
   id: string;
   role: MessageRole;
@@ -13,4 +15,5 @@ export interface Message {
   sprintStories?: SprintStory[];
   isError?: boolean;
   timestamp: Date;
+  feedback?: FeedbackRating;
 }

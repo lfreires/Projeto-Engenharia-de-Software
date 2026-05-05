@@ -1,6 +1,21 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Message } from "@/models/message";
-import { sendMessage } from "@/services/chatService";
+import { FeedbackRating, Message } from "@/models/message";
+import { sendMessage, clearSession, sendFeedback } from "@/services/chatService";
+import { PROJECT_ID } from "@/services/projectService";
+
+// ─── Session management ───────────────────────────────────────────────────────
+
+function getOrCreateSessionId(): string {
+  const key = "docai_session_id";
+  let id = sessionStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
+
+// ─── Welcome message ──────────────────────────────────────────────────────────
 
 function buildWelcomeMessage(): Message {
   return {
@@ -11,6 +26,8 @@ function buildWelcomeMessage(): Message {
     timestamp: new Date(),
   };
 }
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export interface UseChatReturn {
   messages: Message[];
@@ -24,12 +41,14 @@ export interface UseChatReturn {
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   handleInput: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   clearChat: () => void;
+  submitFeedback: (messageId: string, rating: FeedbackRating) => void;
 }
 
 export function useChat(): UseChatReturn {
   const [messages, setMessages] = useState<Message[]>([buildWelcomeMessage()]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const sessionIdRef = useRef<string>(getOrCreateSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -51,7 +70,7 @@ export function useChat(): UseChatReturn {
       setMessages((prev) => [...prev, userMsg]);
       setIsTyping(true);
 
-      sendMessage(text.trim())
+      sendMessage(text.trim(), PROJECT_ID, sessionIdRef.current)
         .then((payload) => {
           const aiMsg: Message = {
             id: `ai-${Date.now()}`,
@@ -65,12 +84,11 @@ export function useChat(): UseChatReturn {
           };
           setMessages((prev) => [...prev, aiMsg]);
         })
-        .catch(() => {
+        .catch((err: Error) => {
           const errMsg: Message = {
             id: `error-${Date.now()}`,
             role: "ai",
-            content:
-              "Não foi possível processar sua pergunta no momento. Por favor, tente novamente.",
+            content: err.message ?? "Não foi possível processar sua pergunta no momento. Por favor, tente novamente.",
             isError: true,
             timestamp: new Date(),
           };
@@ -97,6 +115,12 @@ export function useChat(): UseChatReturn {
   );
 
   const clearChat = useCallback(() => {
+    clearSession(sessionIdRef.current).catch(() => {});
+    // Generate a new session after clearing
+    const newSessionId = crypto.randomUUID();
+    sessionStorage.setItem("docai_session_id", newSessionId);
+    sessionIdRef.current = newSessionId;
+
     setMessages([buildWelcomeMessage()]);
     setInputValue("");
     setIsTyping(false);
@@ -120,6 +144,18 @@ export function useChat(): UseChatReturn {
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
   }, []);
 
+  const submitFeedback = useCallback(
+    (messageId: string, rating: FeedbackRating) => {
+      // Optimistically update the local message state
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, feedback: rating } : m))
+      );
+      // Fire-and-forget — ignore errors silently (feedback is best-effort)
+      sendFeedback(sessionIdRef.current, messageId, rating).catch(() => {});
+    },
+    []
+  );
+
   return {
     messages,
     inputValue,
@@ -132,5 +168,6 @@ export function useChat(): UseChatReturn {
     handleKeyDown,
     handleInput,
     clearChat,
+    submitFeedback,
   };
 }

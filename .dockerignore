@@ -1,0 +1,19 @@
+# Build context is the repo root; we only need frontend/ and docker/nginx.conf
+
+# Node artifacts (now inside frontend/)
+frontend/node_modules
+frontend/dist
+
+# Git history
+.git
+
+# Backend and infra — not needed for frontend image
+query-service
+terraform
+.github
+scripts
+docs
+
+# Root-level files not needed in build context
+README.md
+docker-compose.yml
