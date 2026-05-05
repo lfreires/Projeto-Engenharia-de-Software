@@ -1,11 +1,12 @@
 import React from "react";
 import { Sparkles, AlertCircle } from "lucide-react";
-import { Message } from "@/models/message";
+import { FeedbackRating, Message } from "@/models/message";
 import { formatTime } from "@/utils/formatters";
 import { InlineDiagram } from "./InlineDiagram";
 import { AIImageResponse } from "./AIImageResponse";
 import { CitationCard } from "./CitationCard";
 import { SprintStoriesCard } from "./SprintStoriesCard";
+import { FeedbackButtons } from "./FeedbackButtons";
 
 function renderContent(content: string) {
   // Simple bold rendering: **text** → <strong>text</strong>
@@ -24,7 +25,12 @@ function renderContent(content: string) {
   });
 }
 
-export function MessageBubble({ message }: { message: Message }) {
+interface MessageBubbleProps {
+  message: Message;
+  onFeedback?: (messageId: string, rating: FeedbackRating) => void;
+}
+
+export function MessageBubble({ message, onFeedback }: MessageBubbleProps) {
   const isAI = message.role === "ai";
 
   if (!isAI) {
@@ -120,6 +126,15 @@ export function MessageBubble({ message }: { message: Message }) {
               <CitationCard key={cit.id} citation={cit} />
             ))}
           </div>
+        )}
+
+        {/* Feedback buttons — only for non-error AI messages with a handler */}
+        {!message.isError && onFeedback && (
+          <FeedbackButtons
+            messageId={message.id}
+            currentFeedback={message.feedback}
+            onFeedback={onFeedback}
+          />
         )}
       </div>
     </div>

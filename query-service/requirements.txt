@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+openai                      # SDK compatível com Groq (mesma interface)
+sentence-transformers        # embeddings locais — sem API externa
+azure-search-documents
+azure-identity
+azure-keyvault-secrets
+tenacity                     # retry / circuit breaker
