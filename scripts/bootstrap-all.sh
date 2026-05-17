@@ -86,13 +86,7 @@ for ns in \
 done
 ok "Providers registrados"
 
-# ── 3. Resource group ─────────────────────────────────────────────────────────
-
-log "Criando resource group"
-az group create --name "$RG" --location "$LOCATION" --subscription "$SUB_ID" --output none
-ok "Resource group: $RG"
-
-# ── 4. identity-service (infra compartilhada + Managed Identity) ───────────────
+# ── 3. identity-service (infra compartilhada + Managed Identity) ───────────────
 
 log "Provisionando identity-service (infra compartilhada)"
 
