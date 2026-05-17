@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 # bootstrap-all.sh — provisionamento completo do DocAI no Azure for Students.
-# Execute uma única vez, localmente, após: az login
+# Execute no Azure Cloud Shell (shell.azure.com) após clonar o repositório.
 #
 # Uso:
 #   export TF_VAR_sql_admin_password="SuaSenhaSQL123!"
 #   export TF_VAR_postgres_admin_password="SuaSenhaPG123!"
 #   bash scripts/bootstrap-all.sh
 #
-# Variáveis opcionais (têm padrão):
-#   LOCATION          — região Azure (padrão: eastus)
-#   RG                — nome do resource group (padrão: rg-docai-student)
-#   PREFIX            — prefixo de recursos (padrão: docaistudent)
-#   STORAGE_SUFFIX    — sufixo único p/ storage account do tfstate (padrão: gerado automaticamente)
+# O Terraform state fica salvo localmente no Cloud Shell (~/.tfstate-docai/).
+# O Cloud Shell tem armazenamento persistente, então é seguro.
 
 set -euo pipefail
 trap 'echo -e "\n\033[0;31mErro na linha $LINENO — verifique o comando acima.\033[0m" >&2' ERR
@@ -38,14 +35,21 @@ GITHUB_REPOS=(
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
+# Diretório para guardar os tfstate localmente no Cloud Shell
+TF_STATE_DIR="${HOME}/.tfstate-docai"
+mkdir -p "$TF_STATE_DIR"
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 log() { echo -e "\n\033[1;34m=== $* ===\033[0m"; }
 ok()  { echo -e "\033[0;32m✓ $*\033[0m"; }
 
 tf_apply() {
-  local dir="$1"; shift
-  terraform -chdir="$dir" init -input=false "${@}" -reconfigure
+  local dir="$1"
+  local state_file="$2"
+  shift 2
+  terraform -chdir="$dir" init -input=false -reconfigure \
+    -backend-config="path=${state_file}"
   terraform -chdir="$dir" apply -input=false -auto-approve "${@}"
 }
 
@@ -56,147 +60,136 @@ az account show --output table
 SUB_ID=$(az account show --query id -o tsv)
 TENANT_ID_LOGIN=$(az account show --query tenantId -o tsv)
 az account set --subscription "$SUB_ID"
-# Garantir que o ARM use a subscription correta via variável de ambiente
 export ARM_SUBSCRIPTION_ID="$SUB_ID"
 export ARM_TENANT_ID="$TENANT_ID_LOGIN"
-ok "Subscription: $SUB_ID"
+ok "Subscription: $SUB_ID | Tenant: $TENANT_ID_LOGIN"
 
-# ── 2. Storage account para Terraform state ───────────────────────────────────
+# ── 2. Registrar resource providers necessários ───────────────────────────────
 
-log "Criando storage account para Terraform state"
+log "Registrando resource providers (pode levar alguns minutos)"
+for ns in \
+  Microsoft.App \
+  Microsoft.ContainerRegistry \
+  Microsoft.Storage \
+  Microsoft.Search \
+  Microsoft.DocumentDB \
+  Microsoft.DBforPostgreSQL \
+  Microsoft.Sql \
+  Microsoft.ApiManagement \
+  Microsoft.Web \
+  Microsoft.KeyVault \
+  Microsoft.ManagedIdentity \
+  Microsoft.OperationalInsights; do
+  echo "  Registrando $ns..."
+  az provider register --namespace "$ns" --subscription "$SUB_ID" --wait 2>/dev/null || \
+    echo "  (aviso: não foi possível registrar $ns — Terraform tentará automaticamente)"
+done
+ok "Providers registrados"
 
-# tr | head causa SIGPIPE com pipefail; usar printf + $RANDOM é portável em bash
-STORAGE_SUFFIX="${STORAGE_SUFFIX:-$(printf '%04x' $((RANDOM + RANDOM)))}"
-TF_STORAGE="${PREFIX}tfstate${STORAGE_SUFFIX}"
-TF_CONTAINER="tfstate"
+# ── 3. Resource group ─────────────────────────────────────────────────────────
 
+log "Criando resource group"
 az group create --name "$RG" --location "$LOCATION" --subscription "$SUB_ID" --output none
-az storage account create \
-  --name "$TF_STORAGE" \
-  --resource-group "$RG" \
-  --subscription "$SUB_ID" \
-  --sku Standard_LRS \
-  --allow-blob-public-access false \
-  --output none
-az storage container create \
-  --name "$TF_CONTAINER" \
-  --account-name "$TF_STORAGE" \
-  --auth-mode login \
-  --output none
+ok "Resource group: $RG"
 
-ok "Storage account: $TF_STORAGE"
-
-# Exportar variáveis de backend para todos os serviços
-export TF_BACKEND_RESOURCE_GROUP="$RG"
-export TF_BACKEND_STORAGE_ACCOUNT="$TF_STORAGE"
-export TF_BACKEND_CONTAINER="$TF_CONTAINER"
-
-# ── 3. identity-service (infra compartilhada + Managed Identity) ───────────────
+# ── 4. identity-service (infra compartilhada + Managed Identity) ───────────────
 
 log "Provisionando identity-service (infra compartilhada)"
-
-export TF_BACKEND_KEY="identity-service.tfstate"
 
 # Montar lista de repos no formato HCL para a variável
 REPOS_HCL="[$(printf '"%s",' "${GITHUB_REPOS[@]}" | sed 's/,$//')]"
 
-BACKEND_ARGS=(
-  -backend-config="resource_group_name=${TF_BACKEND_RESOURCE_GROUP}"
-  -backend-config="storage_account_name=${TF_BACKEND_STORAGE_ACCOUNT}"
-  -backend-config="container_name=${TF_BACKEND_CONTAINER}"
-  -backend-config="key=${TF_BACKEND_KEY}"
-)
-
 tf_apply "$ROOT_DIR/identity-service/terraform" \
-  "${BACKEND_ARGS[@]}" \
+  "$TF_STATE_DIR/identity-service.tfstate" \
   -var="sql_admin_password=${TF_VAR_sql_admin_password}" \
   -var="github_repos=${REPOS_HCL}"
 
 # Capturar outputs do identity-service
-MI_CLIENT_ID=$(terraform -chdir="$ROOT_DIR/identity-service/terraform" output -raw managed_identity_client_id)
-TENANT_ID=$(terraform -chdir="$ROOT_DIR/identity-service/terraform" output -raw tenant_id)
-CAE_ID=$(terraform -chdir="$ROOT_DIR/identity-service/terraform" output -raw container_app_environment_id)
-APIM_NAME=$(terraform -chdir="$ROOT_DIR/identity-service/terraform" output -raw api_management_name)
-APIM_URL=$(terraform -chdir="$ROOT_DIR/identity-service/terraform" output -raw api_management_gateway_url)
-ACR_NAME=$(terraform -chdir="$ROOT_DIR/identity-service/terraform" output -raw acr_name)
-ACR_SERVER=$(terraform -chdir="$ROOT_DIR/identity-service/terraform" output -raw acr_login_server)
-IDENTITY_APP_NAME=$(terraform -chdir="$ROOT_DIR/identity-service/terraform" output -raw identity_container_app_name)
-IDENTITY_APP_URL=$(terraform -chdir="$ROOT_DIR/identity-service/terraform" output -raw identity_container_app_url)
+cd "$ROOT_DIR/identity-service/terraform"
+MI_CLIENT_ID=$(terraform output -raw managed_identity_client_id)
+TENANT_ID=$(terraform output -raw tenant_id)
+CAE_ID=$(terraform output -raw container_app_environment_id)
+APIM_NAME=$(terraform output -raw api_management_name)
+APIM_URL=$(terraform output -raw api_management_gateway_url)
+ACR_NAME=$(terraform output -raw acr_name)
+ACR_SERVER=$(terraform output -raw acr_login_server)
+IDENTITY_APP_NAME=$(terraform output -raw identity_container_app_name)
+IDENTITY_APP_URL=$(terraform output -raw identity_container_app_url)
+cd "$ROOT_DIR"
 
 ok "Managed Identity client_id: $MI_CLIENT_ID"
 ok "ACR: $ACR_SERVER"
 
-# ── 4. project-service ────────────────────────────────────────────────────────
+# ── 5. project-service ────────────────────────────────────────────────────────
 
 log "Provisionando project-service"
 
-export TF_BACKEND_KEY="project-service.tfstate"
-BACKEND_ARGS[-1]="-backend-config=key=${TF_BACKEND_KEY}"
-
 tf_apply "$ROOT_DIR/project-service/terraform" \
-  "${BACKEND_ARGS[@]}" \
+  "$TF_STATE_DIR/project-service.tfstate" \
   -var="container_app_environment_id=${CAE_ID}" \
   -var="api_management_name=${APIM_NAME}" \
   -var="postgres_admin_password=${TF_VAR_postgres_admin_password}" \
   -var="container_image=mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
 
-PROJECT_APP_NAME=$(terraform -chdir="$ROOT_DIR/project-service/terraform" output -raw container_app_name)
-PROJECT_APP_URL=$(terraform -chdir="$ROOT_DIR/project-service/terraform" output -raw container_app_url)
+cd "$ROOT_DIR/project-service/terraform"
+PROJECT_APP_NAME=$(terraform output -raw container_app_name)
+PROJECT_APP_URL=$(terraform output -raw container_app_url)
+cd "$ROOT_DIR"
 ok "project-service: $PROJECT_APP_URL"
 
-# ── 5. ingestion-service ──────────────────────────────────────────────────────
+# ── 6. ingestion-service ──────────────────────────────────────────────────────
 
 log "Provisionando ingestion-service"
 
-export TF_BACKEND_KEY="ingestion-service.tfstate"
-BACKEND_ARGS[-1]="-backend-config=key=${TF_BACKEND_KEY}"
-
-# Nome do storage account para documentos (globalmente único)
 INGESTION_STORAGE="${PREFIX}docs$(printf '%04x' $((RANDOM + RANDOM)))"
 
 tf_apply "$ROOT_DIR/ingestion-service/terraform" \
-  "${BACKEND_ARGS[@]}" \
+  "$TF_STATE_DIR/ingestion-service.tfstate" \
   -var="container_app_environment_id=${CAE_ID}" \
   -var="api_management_name=${APIM_NAME}" \
   -var="storage_account_name=${INGESTION_STORAGE}" \
   -var="container_image=mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
 
-INGESTION_APP_NAME=$(terraform -chdir="$ROOT_DIR/ingestion-service/terraform" output -raw container_app_name)
-INGESTION_APP_URL=$(terraform -chdir="$ROOT_DIR/ingestion-service/terraform" output -raw container_app_url)
+cd "$ROOT_DIR/ingestion-service/terraform"
+INGESTION_APP_NAME=$(terraform output -raw container_app_name)
+INGESTION_APP_URL=$(terraform output -raw container_app_url)
+cd "$ROOT_DIR"
 ok "ingestion-service: $INGESTION_APP_URL"
 
-# ── 6. query-service ──────────────────────────────────────────────────────────
+# ── 7. query-service ──────────────────────────────────────────────────────────
 
 log "Provisionando query-service"
 
-export TF_BACKEND_KEY="query-service.tfstate"
-BACKEND_ARGS[-1]="-backend-config=key=${TF_BACKEND_KEY}"
-
 tf_apply "$ROOT_DIR/query-service/terraform" \
-  "${BACKEND_ARGS[@]}" \
+  "$TF_STATE_DIR/query-service.tfstate" \
   -var="container_app_environment_id=${CAE_ID}" \
   -var="api_management_name=${APIM_NAME}" \
   -var="ingestion_service_url=https://${INGESTION_APP_URL}" \
   -var="container_image=mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
 
-QUERY_APP_NAME=$(terraform -chdir="$ROOT_DIR/query-service/terraform" output -raw container_app_name)
-QUERY_APP_URL=$(terraform -chdir="$ROOT_DIR/query-service/terraform" output -raw container_app_url)
+cd "$ROOT_DIR/query-service/terraform"
+QUERY_APP_NAME=$(terraform output -raw container_app_name)
+QUERY_APP_URL=$(terraform output -raw container_app_url)
+cd "$ROOT_DIR"
 ok "query-service: $QUERY_APP_URL"
 
-# ── 7. frontend ───────────────────────────────────────────────────────────────
+# ── 8. frontend ───────────────────────────────────────────────────────────────
 
 log "Provisionando frontend (Static Web App)"
 
-tf_apply "$ROOT_DIR/frontend/terraform"
+tf_apply "$ROOT_DIR/frontend/terraform" \
+  "$TF_STATE_DIR/frontend.tfstate"
 
-FRONTEND_HOST=$(terraform -chdir="$ROOT_DIR/frontend/terraform" output -raw default_host_name)
-SWA_TOKEN=$(terraform -chdir="$ROOT_DIR/frontend/terraform" output -raw api_key)
+cd "$ROOT_DIR/frontend/terraform"
+FRONTEND_HOST=$(terraform output -raw default_host_name)
+SWA_TOKEN=$(terraform output -raw api_key)
+cd "$ROOT_DIR"
 ok "Frontend: https://$FRONTEND_HOST"
 
-# ── 8. Imprimir guia de configuração dos GitHub Secrets ───────────────────────
+# ── 9. Salvar outputs para consulta futura ────────────────────────────────────
 
-cat <<EOF
-
+OUTPUTS_FILE="$TF_STATE_DIR/github-secrets.txt"
+cat > "$OUTPUTS_FILE" <<SECRETS
 
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║          GUIA DE CONFIGURAÇÃO DOS REPOSITÓRIOS GITHUB                       ║
@@ -268,6 +261,9 @@ FRONTEND  (repo: ${GITHUB_REPOS[4]})
     VITE_PROJECT_ID     = proj-demo
 
 ════════════════════════════════════════════════════════════════════════════════
-Bootstrap concluído! Salve o output acima antes de fechar o terminal.
-════════════════════════════════════════════════════════════════════════════════
-EOF
+SECRETS
+
+cat "$OUTPUTS_FILE"
+echo ""
+echo "Este arquivo também foi salvo em: $OUTPUTS_FILE"
+echo "Para ver novamente: cat $OUTPUTS_FILE"

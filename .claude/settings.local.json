@@ -14,7 +14,10 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:alexfranz.com)",
       "WebFetch(domain:codeyaan.com)",
-      "WebFetch(domain:render.com)"
+      "WebFetch(domain:render.com)",
+      "Bash(bash scripts/bootstrap-all.sh)",
+      "Bash(export TF_VAR_sql_admin_password=\"SuaSenhaSQL123!\")",
+      "Bash(export TF_VAR_postgres_admin_password=\"SuaSenhaPG123!\")"
     ]
   }
 }
