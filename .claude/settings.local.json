@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"D:\\\\Dev\\(D\\)\\\\Aula\\\\EngComp2\\\\Projeto-Engenharia-de-Software\" -Force)",
+      "Bash(Select-Object Name, FullName, PSIsContainer)",
+      "Bash(rtk ls *)",
+      "Bash(rtk find *)",
+      "Bash(rtk read *)",
+      "WebSearch",
+      "Bash(cd /d \"D:\\\\Dev\\(D\\)\\\\Aula\\\\EngComp2\\\\Projeto-Engenharia-de-Software\")",
+      "Bash(Get-ChildItem -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "WebFetch(domain:colinsalmcorner.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:alexfranz.com)",
+      "WebFetch(domain:codeyaan.com)",
+      "WebFetch(domain:render.com)"
+    ]
+  }
+}

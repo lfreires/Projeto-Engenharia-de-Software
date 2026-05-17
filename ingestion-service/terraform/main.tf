@@ -106,6 +106,10 @@ output "search_tier" {
   value = azurerm_search_service.vector.sku
 }
 
+output "container_app_name" {
+  value = azurerm_container_app.ingestion.name
+}
+
 output "container_app_url" {
   value = azurerm_container_app.ingestion.latest_revision_fqdn
 }

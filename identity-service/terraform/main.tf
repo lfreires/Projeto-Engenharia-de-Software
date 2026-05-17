@@ -50,6 +50,12 @@ variable "container_image" {
   default     = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
 }
 
+variable "github_repos" {
+  type        = list(string)
+  description = "GitHub repos (format: 'org/repo') that will deploy via CI/CD. One federated credential is created per repo."
+  default     = []
+}
+
 resource "azurerm_resource_group" "docai" {
   name     = var.resource_group_name
   location = var.location
@@ -139,8 +145,44 @@ resource "azurerm_container_app" "identity" {
   }
 }
 
+# ── CI/CD Identity ─────────────────────────────────────────────────────────────
+
+resource "azurerm_user_assigned_identity" "github_actions" {
+  name                = "${var.name_prefix}-github-actions-mi"
+  resource_group_name = azurerm_resource_group.docai.name
+  location            = azurerm_resource_group.docai.location
+}
+
+resource "azurerm_role_assignment" "github_actions_contributor" {
+  scope                = azurerm_resource_group.docai.id
+  role_definition_name = "Contributor"
+  principal_id         = azurerm_user_assigned_identity.github_actions.principal_id
+}
+
+resource "azurerm_role_assignment" "github_actions_acrpush" {
+  scope                = azurerm_container_registry.shared.id
+  role_definition_name = "AcrPush"
+  principal_id         = azurerm_user_assigned_identity.github_actions.principal_id
+}
+
+resource "azurerm_federated_identity_credential" "github_repos" {
+  for_each            = toset(var.github_repos)
+  name                = replace(each.value, "/", "-")
+  resource_group_name = azurerm_resource_group.docai.name
+  parent_id           = azurerm_user_assigned_identity.github_actions.id
+  issuer              = "https://token.actions.githubusercontent.com"
+  subject             = "repo:${each.value}:ref:refs/heads/main"
+  audience            = ["api://AzureADTokenExchange"]
+}
+
+# ── Outputs ────────────────────────────────────────────────────────────────────
+
 output "resource_group_name" {
   value = azurerm_resource_group.docai.name
+}
+
+output "acr_name" {
+  value = azurerm_container_registry.shared.name
 }
 
 output "acr_login_server" {
@@ -153,4 +195,28 @@ output "container_app_environment_id" {
 
 output "api_management_name" {
   value = azurerm_api_management.gateway.name
+}
+
+output "api_management_gateway_url" {
+  value = azurerm_api_management.gateway.gateway_url
+}
+
+output "identity_container_app_name" {
+  value = azurerm_container_app.identity.name
+}
+
+output "identity_container_app_url" {
+  value = azurerm_container_app.identity.latest_revision_fqdn
+}
+
+output "managed_identity_client_id" {
+  value = azurerm_user_assigned_identity.github_actions.client_id
+}
+
+output "tenant_id" {
+  value = data.azurerm_client_config.current.tenant_id
+}
+
+output "subscription_id" {
+  value = data.azurerm_client_config.current.subscription_id
 }

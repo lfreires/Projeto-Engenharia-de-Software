@@ -115,6 +115,10 @@ output "database_engine" {
   value = "cosmos-db-nosql"
 }
 
+output "container_app_name" {
+  value = azurerm_container_app.query.name
+}
+
 output "container_app_url" {
   value = azurerm_container_app.query.latest_revision_fqdn
 }

@@ -109,6 +109,10 @@ output "database_engine" {
   value = "postgresql-flexible-server"
 }
 
+output "container_app_name" {
+  value = azurerm_container_app.projects.name
+}
+
 output "container_app_url" {
   value = azurerm_container_app.projects.latest_revision_fqdn
 }
