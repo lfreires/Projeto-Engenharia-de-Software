@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -7,7 +7,11 @@ from app.schemas.chat import ChatRequest, HistoryTurn
 
 @pytest.fixture
 def valid_request():
-    return ChatRequest(project_id="proj-1", session_id="sess-1", message="What is the architecture?")
+    return ChatRequest(
+        project_id="proj-1",
+        session_id="sess-1",
+        message="What is the architecture?",
+    )
 
 
 @pytest.fixture
@@ -26,9 +30,14 @@ def mock_chunks():
 @pytest.mark.asyncio
 async def test_rag_pipeline_returns_chat_response(valid_request, mock_chunks):
     with (
-        patch("app.services.rag_pipeline.embed", return_value=[0.1] * 384),
-        patch("app.services.rag_pipeline.retrieve", return_value=mock_chunks),
-        patch("app.services.rag_pipeline.chat_completion", return_value=("The answer.", "llama-3.3-70b-versatile")),
+        patch(
+            "app.services.rag_pipeline.search_ingestion",
+            new=AsyncMock(return_value=mock_chunks),
+        ),
+        patch(
+            "app.services.rag_pipeline.chat_completion",
+            return_value=("The answer.", "llama-3.3-70b-versatile"),
+        ),
     ):
         from app.services.rag_pipeline import run
         response = await run(valid_request, history=[])
@@ -44,8 +53,7 @@ async def test_rag_pipeline_raises_404_when_no_chunks(valid_request):
     from fastapi import HTTPException
 
     with (
-        patch("app.services.rag_pipeline.embed", return_value=[0.1] * 384),
-        patch("app.services.rag_pipeline.retrieve", return_value=[]),
+        patch("app.services.rag_pipeline.search_ingestion", new=AsyncMock(return_value=[])),
     ):
         from app.services.rag_pipeline import run
         with pytest.raises(HTTPException) as exc_info:
@@ -66,11 +74,38 @@ async def test_rag_pipeline_passes_history(valid_request, mock_chunks):
         return ("ok", "llama-3.3-70b-versatile")
 
     with (
-        patch("app.services.rag_pipeline.embed", return_value=[0.1] * 384),
-        patch("app.services.rag_pipeline.retrieve", return_value=mock_chunks),
+        patch(
+            "app.services.rag_pipeline.search_ingestion",
+            new=AsyncMock(return_value=mock_chunks),
+        ),
         patch("app.services.rag_pipeline.chat_completion", side_effect=capture_chat_completion),
     ):
         from app.services.rag_pipeline import run
         await run(valid_request, history=history)
         full_text = " ".join(m["content"] for m in captured_messages["messages"])
         assert "previous question" in full_text or "previous answer" in full_text
+
+
+@pytest.mark.asyncio
+async def test_rag_pipeline_calls_ingestion_search_with_project_query_and_top_k(
+    valid_request,
+    mock_chunks,
+):
+    search = AsyncMock(return_value=mock_chunks)
+
+    with (
+        patch("app.services.rag_pipeline.search_ingestion", new=search),
+        patch(
+            "app.services.rag_pipeline.chat_completion",
+            return_value=("ok", "llama-3.3-70b-versatile"),
+        ),
+    ):
+        from app.services.rag_pipeline import run
+
+        await run(valid_request, history=[])
+
+    search.assert_awaited_once_with(
+        project_id=valid_request.project_id,
+        query=valid_request.message,
+        top_k=valid_request.top_k,
+    )

@@ -1,21 +1,29 @@
 import React from "react";
 import { useChat } from "@/hooks/useChat";
-import { getCurrentProject } from "@/services/projectService";
 import { ConsultationHeader } from "@/views/components/ConsultationHeader";
-import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
+import { ChatMessages } from "./ChatMessages";
 
 interface ChatAreaProps {
   materialsCount: number;
+  projectName: string;
   showMaterials: boolean;
   onToggleMaterials: () => void;
+  onConnectionError: (message: string | null) => void;
 }
 
-export function ChatArea({ materialsCount, showMaterials, onToggleMaterials }: ChatAreaProps) {
+export function ChatArea({
+  materialsCount,
+  projectName,
+  showMaterials,
+  onToggleMaterials,
+  onConnectionError,
+}: ChatAreaProps) {
   const {
     messages,
     inputValue,
     isTyping,
+    connectionError,
     messagesEndRef,
     textareaRef,
     handleSend,
@@ -26,12 +34,14 @@ export function ChatArea({ materialsCount, showMaterials, onToggleMaterials }: C
     submitFeedback,
   } = useChat();
 
-  const project = getCurrentProject();
+  React.useEffect(() => {
+    onConnectionError(connectionError);
+  }, [connectionError, onConnectionError]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-w-0 bg-white">
       <ConsultationHeader
-        projectName={project.name}
+        projectName={projectName}
         materialsCount={materialsCount}
         showMaterials={showMaterials}
         onToggleMaterials={onToggleMaterials}

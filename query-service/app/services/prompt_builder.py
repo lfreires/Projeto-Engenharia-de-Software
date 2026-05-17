@@ -2,13 +2,13 @@ from app.config import settings
 from app.schemas.chat import HistoryTurn, SourceItem
 
 _SYSTEM_PROMPT = (
-    "Você é um assistente especializado em documentação de projetos de software. "
-    "Responda com base exclusivamente nos trechos de documentação fornecidos no contexto. "
-    "Se a informação não estiver no contexto, diga que não encontrou nos documentos indexados. "
-    "Seja objetivo, claro e cite as fontes quando relevante."
+    "Voce e um assistente especializado em documentacao de projetos de software. "
+    "Responda com base exclusivamente nos trechos fornecidos no contexto. "
+    "Se a informacao nao estiver no contexto, diga que nao encontrou nos documentos indexados. "
+    "Cite as fontes pelo nome do arquivo e chunk quando relevante. "
+    "Nunca invente caminhos, arquivos ou fatos que nao aparecam no contexto."
 )
 
-# Rough approximation: 1 token ≈ 4 characters
 _CHARS_PER_TOKEN = 4
 
 
@@ -20,6 +20,12 @@ def _estimate_tokens(text: str) -> int:
     return len(text) // _CHARS_PER_TOKEN
 
 
+def _chunk_location(chunk: dict) -> str:
+    file_name = chunk.get("file_name", "doc")
+    chunk_index = chunk.get("chunk_index", 0)
+    return chunk.get("location") or f"{file_name}#chunk-{chunk_index}"
+
+
 def build_messages(
     query: str,
     context_chunks: list[dict],
@@ -29,24 +35,23 @@ def build_messages(
 ) -> list[dict]:
     messages: list[dict] = [{"role": "system", "content": _SYSTEM_PROMPT}]
 
-    # Add last N turns of history (each turn = 1 HistoryTurn object, so N turns = N messages)
-    recent = history[-(max_history_turns):]
+    recent = history[-max_history_turns:]
     for turn in recent:
         messages.append({"role": turn.role, "content": turn.content})
 
-    # Build context block from chunks, respecting token limit
     context_parts: list[str] = []
     used_tokens = 0
     for chunk in context_chunks:
         text = chunk.get("chunk_text", "")
         tokens = _estimate_tokens(text)
+        header = f"[Fonte: {_chunk_location(chunk)}]"
+
         if used_tokens + tokens > max_context_tokens:
-            # Truncate the chunk to fit
             remaining_chars = (max_context_tokens - used_tokens) * _CHARS_PER_TOKEN
-            text = text[:remaining_chars]
-            context_parts.append(f"[{chunk.get('file_name', 'doc')}]\n{text}")
+            context_parts.append(f"{header}\n{text[:remaining_chars]}")
             break
-        context_parts.append(f"[{chunk.get('file_name', 'doc')}]\n{text}")
+
+        context_parts.append(f"{header}\n{text}")
         used_tokens += tokens
 
     context_block = "\n\n".join(context_parts)
@@ -65,7 +70,9 @@ def format_sources(search_results: list[dict]) -> list[SourceItem]:
         sources.append(
             SourceItem(
                 document_id=result.get("document_id", ""),
+                material_id=result.get("material_id"),
                 file_name=result.get("file_name", ""),
+                location=_chunk_location(result),
                 chunk_index=result.get("chunk_index", 0),
                 score=result.get("@search.score", 0.0),
             )

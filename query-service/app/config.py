@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     azure_search_endpoint: str = "https://mock.search.windows.net"
     azure_search_key: str = "test-key"
     azure_search_index: str = "documents"
+    ingestion_service_url: str = "http://ingestion-service:8000"
+    identity_service_url: str = ""
+    internal_service_token: str = "internal-query-token"
+    token_cache_ttl_seconds: int = 60
 
     primary_llm_model: str = "llama-3.3-70b-versatile"
     fallback_llm_model: str = "llama-3.1-8b-instant"

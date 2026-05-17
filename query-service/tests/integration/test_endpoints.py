@@ -36,6 +36,7 @@ VALID_PAYLOAD = {
 @pytest.fixture
 def app():
     from app.main import create_app
+
     return create_app()
 
 
@@ -58,7 +59,7 @@ async def test_health_returns_200(client):
 
 @pytest.mark.asyncio
 async def test_chat_with_valid_payload_returns_200(client):
-    with patch("app.routers.query.rag_pipeline.run", return_value=MOCK_RESPONSE):
+    with patch("app.services.chat_service.rag_pipeline.run", return_value=MOCK_RESPONSE):
         resp = await client.post("/api/v1/query/chat", json=VALID_PAYLOAD, headers=AUTH_HEADER)
     assert resp.status_code == 200
     data = resp.json()
@@ -78,8 +79,11 @@ async def test_chat_unknown_project_returns_404(client):
     from fastapi import HTTPException
 
     with patch(
-        "app.routers.query.rag_pipeline.run",
-        side_effect=HTTPException(status_code=404, detail={"code": "PROJECT_NOT_FOUND", "message": "not found"}),
+        "app.services.chat_service.rag_pipeline.run",
+        side_effect=HTTPException(
+            status_code=404,
+            detail={"code": "PROJECT_NOT_FOUND", "message": "not found"},
+        ),
     ):
         resp = await client.post("/api/v1/query/chat", json=VALID_PAYLOAD, headers=AUTH_HEADER)
     assert resp.status_code == 404
@@ -87,7 +91,7 @@ async def test_chat_unknown_project_returns_404(client):
 
 @pytest.mark.asyncio
 async def test_chat_groq_429_triggers_fallback(client):
-    with patch("app.routers.query.rag_pipeline.run", return_value=MOCK_RESPONSE_FALLBACK):
+    with patch("app.services.chat_service.rag_pipeline.run", return_value=MOCK_RESPONSE_FALLBACK):
         resp = await client.post("/api/v1/query/chat", json=VALID_PAYLOAD, headers=AUTH_HEADER)
     assert resp.status_code == 200
     assert resp.json()["model_used"] == "llama-3.1-8b-instant"
@@ -98,8 +102,11 @@ async def test_chat_both_models_fail_returns_503(client):
     from fastapi import HTTPException
 
     with patch(
-        "app.routers.query.rag_pipeline.run",
-        side_effect=HTTPException(status_code=503, detail={"code": "LLM_UNAVAILABLE", "message": "Groq down"}),
+        "app.services.chat_service.rag_pipeline.run",
+        side_effect=HTTPException(
+            status_code=503,
+            detail={"code": "LLM_UNAVAILABLE", "message": "Groq down"},
+        ),
     ):
         resp = await client.post("/api/v1/query/chat", json=VALID_PAYLOAD, headers=AUTH_HEADER)
     assert resp.status_code == 503
@@ -110,7 +117,7 @@ async def test_chat_both_models_fail_returns_503(client):
 @pytest.mark.asyncio
 async def test_get_history_returns_messages(client):
     # First, post a chat to populate history
-    with patch("app.routers.query.rag_pipeline.run", return_value=MOCK_RESPONSE):
+    with patch("app.services.chat_service.rag_pipeline.run", return_value=MOCK_RESPONSE):
         await client.post("/api/v1/query/chat", json=VALID_PAYLOAD, headers=AUTH_HEADER)
 
     resp = await client.get("/api/v1/query/history/sess-1", headers=AUTH_HEADER)
@@ -122,7 +129,7 @@ async def test_get_history_returns_messages(client):
 
 @pytest.mark.asyncio
 async def test_delete_history_clears_session(client):
-    with patch("app.routers.query.rag_pipeline.run", return_value=MOCK_RESPONSE):
+    with patch("app.services.chat_service.rag_pipeline.run", return_value=MOCK_RESPONSE):
         await client.post("/api/v1/query/chat", json=VALID_PAYLOAD, headers=AUTH_HEADER)
 
     del_resp = await client.delete("/api/v1/query/history/sess-1", headers=AUTH_HEADER)

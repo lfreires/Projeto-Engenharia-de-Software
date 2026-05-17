@@ -13,7 +13,9 @@ class ChatRequest(BaseModel):
 
 class SourceItem(BaseModel):
     document_id: str
+    material_id: str | None = None
     file_name: str
+    location: str | None = None
     chunk_index: int
     score: float
 

@@ -10,7 +10,11 @@ def test_build_system_prompt_returns_string():
 
 def test_build_prompt_includes_context():
     chunks = [
-        {"chunk_text": "Microservices architecture uses Docker.", "file_name": "arch.pdf", "chunk_index": 0},
+        {
+            "chunk_text": "Microservices architecture uses Docker.",
+            "file_name": "arch.pdf",
+            "chunk_index": 0,
+        },
     ]
     messages = build_messages(query="What is the architecture?", context_chunks=chunks, history=[])
     # context must appear somewhere in the messages
@@ -36,7 +40,9 @@ def test_build_prompt_includes_query():
 
 def test_chat_history_max_turns():
     history = [
-        HistoryTurn(role="user", content=f"msg {i}") if i % 2 == 0 else HistoryTurn(role="assistant", content=f"resp {i}")
+        HistoryTurn(role="user", content=f"msg {i}")
+        if i % 2 == 0
+        else HistoryTurn(role="assistant", content=f"resp {i}")
         for i in range(20)
     ]
     messages = build_messages(query="current question", context_chunks=[], history=history)

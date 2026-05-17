@@ -1,9 +1,10 @@
 fastapi
 uvicorn[standard]
 pydantic-settings
-openai                      # SDK compatível com Groq (mesma interface)
-sentence-transformers        # embeddings locais — sem API externa
-azure-search-documents
-azure-identity
+openai
+langchain
+langchain-core
+langchain-groq
 azure-keyvault-secrets
-tenacity                     # retry / circuit breaker
+httpx
+tenacity

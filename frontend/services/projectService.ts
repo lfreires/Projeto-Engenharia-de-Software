@@ -1,117 +1,103 @@
-import { Project, ProjectMaterial } from "@/models/project";
+import { MaterialType, Project, ProjectMaterial } from "@/models/project";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+const BEARER_TOKEN = import.meta.env.VITE_BEARER_TOKEN ?? "dev-token";
 
-/**
- * The active project ID comes from the build-time env var VITE_PROJECT_ID.
- * Set it in .env.local to match the project_id used when documents were indexed.
- * Default matches the demo project used during development.
- */
-export const PROJECT_ID: string = import.meta.env.VITE_PROJECT_ID ?? "ecommerce-api";
+export const PROJECT_ID: string = import.meta.env.VITE_PROJECT_ID ?? "proj-demo";
 
-// ─── Static project metadata ──────────────────────────────────────────────────
-// This data describes the project shell shown in the UI (header, sidebar).
-// The actual document content lives in Azure AI Search (indexed by the Ingestion module).
-// Update these values to reflect your real project.
-
-const MATERIALS: ProjectMaterial[] = [
-  {
-    id: "mat-01",
-    filename: "arquitetura.pdf",
-    type: "pdf",
-    label: "Documento de Arquitetura",
-    description: "Visão geral da arquitetura de microserviços, decisões técnicas e diagramas de componentes.",
-    size: "2.4 MB",
-    lastUpdated: "há 3 dias",
-    tags: ["arquitetura", "microserviços", "design"],
-  },
-  {
-    id: "mat-02",
-    filename: "swagger.yaml",
-    type: "yaml",
-    label: "Documentação da API",
-    description: "Especificação OpenAPI 3.0 com todos os endpoints, schemas e exemplos de requisição.",
-    size: "148 KB",
-    lastUpdated: "há 1 dia",
-    tags: ["api", "endpoints", "swagger"],
-  },
-  {
-    id: "mat-03",
-    filename: "sprint7-ata.xlsx",
-    type: "spreadsheet",
-    label: "Ata do Sprint 7",
-    description: "Histórias de usuário, pontuação, responsáveis e status do sprint atual.",
-    size: "84 KB",
-    lastUpdated: "há 2 dias",
-    tags: ["sprint", "backlog", "scrum"],
-  },
-  {
-    id: "mat-04",
-    filename: "README.md",
-    type: "markdown",
-    label: "README do Projeto",
-    description: "Instruções de setup, variáveis de ambiente, scripts disponíveis e links úteis.",
-    size: "22 KB",
-    lastUpdated: "há 5 dias",
-    tags: ["onboarding", "setup", "docs"],
-  },
-  {
-    id: "mat-05",
-    filename: "auth-flow.md",
-    type: "markdown",
-    label: "Fluxo de Autenticação",
-    description: "Documentação do fluxo JWT com refresh tokens, escopos e políticas de acesso.",
-    size: "18 KB",
-    lastUpdated: "há 7 dias",
-    tags: ["auth", "jwt", "segurança"],
-  },
-  {
-    id: "mat-06",
-    filename: "backlog.xlsx",
-    type: "spreadsheet",
-    label: "Backlog do Produto",
-    description: "Lista completa de funcionalidades planejadas, priorizadas por valor de negócio.",
-    size: "210 KB",
-    lastUpdated: "há 4 dias",
-    tags: ["backlog", "produto", "planejamento"],
-  },
-  {
-    id: "mat-07",
-    filename: "db-schema.sql",
-    type: "sql",
-    label: "Schema do Banco de Dados",
-    description: "DDL do PostgreSQL com todas as tabelas, índices, constraints e relacionamentos.",
-    size: "56 KB",
-    lastUpdated: "há 6 dias",
-    tags: ["database", "sql", "schema"],
-  },
-  {
-    id: "mat-08",
-    filename: "onboarding.pdf",
-    type: "pdf",
-    label: "Guia de Onboarding",
-    description: "Guia técnico para novos membros da equipe: ambiente, padrões de código e fluxo de trabalho.",
-    size: "1.1 MB",
-    lastUpdated: "há 10 dias",
-    tags: ["onboarding", "equipe", "padrões"],
-  },
-];
-
-export const CURRENT_PROJECT: Project = {
-  id: PROJECT_ID,
-  name: "E-commerce API",
-  description: "Plataforma de e-commerce com arquitetura de microserviços para alto volume transacional.",
-  stack: ["Node.js", "React", "PostgreSQL", "Kafka", "Kong"],
-  currentSprint: 7,
-  teamSize: 6,
-  status: "Em andamento",
-  materials: MATERIALS,
-};
-
-export function getCurrentProject(): Project {
-  return CURRENT_PROJECT;
+interface BackendProject {
+  id: string;
+  name: string;
+  description: string;
 }
 
-export function getMaterialById(id: string): ProjectMaterial | undefined {
-  return MATERIALS.find((m) => m.id === id);
+interface BackendMaterial {
+  id: string;
+  title: string;
+  content_type: string;
+  latest_version: {
+    document_id: string;
+    file_name: string;
+    created_at: string;
+  };
+}
+
+export class BackendConnectionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BackendConnectionError";
+  }
+}
+
+function requireApiBaseUrl(): string {
+  if (!API_BASE_URL) {
+    throw new BackendConnectionError("VITE_API_BASE_URL nao foi configurada.");
+  }
+  return API_BASE_URL;
+}
+
+async function fetchJson<T>(path: string): Promise<T> {
+  const baseUrl = requireApiBaseUrl();
+  let response: Response;
+
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      headers: { Authorization: `Bearer ${BEARER_TOKEN}` },
+    });
+  } catch {
+    throw new BackendConnectionError("Nao foi possivel conectar ao backend.");
+  }
+
+  if (!response.ok) {
+    throw new BackendConnectionError(`Backend respondeu com HTTP ${response.status}.`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+function inferMaterialType(contentType: string, filename: string): MaterialType {
+  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+  if (contentType.includes("pdf") || ext === "pdf") return "pdf";
+  if (["xlsx", "xls", "csv"].includes(ext)) return "spreadsheet";
+  if (["md", "mdx"].includes(ext)) return "markdown";
+  if (ext === "sql") return "sql";
+  if (["yaml", "yml"].includes(ext)) return "yaml";
+  return "pdf";
+}
+
+function mapBackendMaterial(material: BackendMaterial): ProjectMaterial {
+  const filename = material.latest_version.file_name;
+  return {
+    id: material.id,
+    filename,
+    type: inferMaterialType(material.content_type, filename),
+    label: material.title,
+    description: `Documento ${material.latest_version.document_id}`,
+    size: "-",
+    lastUpdated: new Date(material.latest_version.created_at).toLocaleDateString("pt-BR"),
+    tags: [],
+  };
+}
+
+export async function fetchProject(projectId: string = PROJECT_ID): Promise<Project> {
+  const data = await fetchJson<BackendProject>(`/api/v1/projects/${projectId}`);
+  return {
+    id: data.id,
+    name: data.name,
+    description: data.description,
+    stack: [],
+    currentSprint: 0,
+    teamSize: 0,
+    status: "Em andamento",
+    materials: [],
+  };
+}
+
+export async function fetchProjectMaterials(
+  projectId: string = PROJECT_ID,
+): Promise<ProjectMaterial[]> {
+  const data = await fetchJson<{ materials: BackendMaterial[] }>(
+    `/api/v1/projects/${projectId}/materials`,
+  );
+  return data.materials.map(mapBackendMaterial);
 }

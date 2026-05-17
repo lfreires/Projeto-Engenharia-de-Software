@@ -22,7 +22,7 @@ function buildWelcomeMessage(): Message {
     id: "ai-welcome",
     role: "ai",
     content:
-      "Olá! Sou o **DocAI**, seu assistente de documentação para o projeto **E-commerce API**. Posso responder perguntas com base nos documentos indexados. O que você gostaria de saber?",
+      "Ola! Sou o **DocAI**, seu assistente de documentacao. Posso responder perguntas com base nos documentos indexados do projeto conectado.",
     timestamp: new Date(),
   };
 }
@@ -34,6 +34,7 @@ export interface UseChatReturn {
   inputValue: string;
   setInputValue: (v: string) => void;
   isTyping: boolean;
+  connectionError: string | null;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   handleSend: () => void;
@@ -48,6 +49,7 @@ export function useChat(): UseChatReturn {
   const [messages, setMessages] = useState<Message[]>([buildWelcomeMessage()]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const sessionIdRef = useRef<string>(getOrCreateSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -72,6 +74,7 @@ export function useChat(): UseChatReturn {
 
       sendMessage(text.trim(), PROJECT_ID, sessionIdRef.current)
         .then((payload) => {
+          setConnectionError(null);
           const aiMsg: Message = {
             id: `ai-${Date.now()}`,
             role: "ai",
@@ -85,6 +88,7 @@ export function useChat(): UseChatReturn {
           setMessages((prev) => [...prev, aiMsg]);
         })
         .catch((err: Error) => {
+          setConnectionError(err.message);
           const errMsg: Message = {
             id: `error-${Date.now()}`,
             role: "ai",
@@ -161,6 +165,7 @@ export function useChat(): UseChatReturn {
     inputValue,
     setInputValue,
     isTyping,
+    connectionError,
     messagesEndRef,
     textareaRef,
     handleSend,

@@ -58,6 +58,12 @@ export function CitationCard({ citation, onViewMaterial }: CitationCardProps) {
         </span>
       </div>
 
+      {citation.location && (
+        <p style={{ fontSize: "10.5px", color: "#4f46e5", margin: "0 0 6px 0" }}>
+          {citation.location}
+        </p>
+      )}
+
       <p style={{ fontSize: "11.5px", color: "#6b7080", lineHeight: "1.55", margin: 0, marginBottom: onViewMaterial ? "8px" : 0 }}>
         "{citation.excerpt}"
       </p>

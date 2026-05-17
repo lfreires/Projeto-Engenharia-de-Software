@@ -1,11 +1,12 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ProjectMaterial } from "@/models/project";
-import { getCurrentProject } from "@/services/projectService";
+import { fetchProjectMaterials } from "@/services/projectService";
 
 export interface UseMaterialsReturn {
   showPanel: boolean;
   materials: ProjectMaterial[];
   selectedMaterial: ProjectMaterial | null;
+  connectionError: string | null;
   togglePanel: () => void;
   openPanel: () => void;
   closePanel: () => void;
@@ -16,8 +17,28 @@ export interface UseMaterialsReturn {
 export function useMaterials(): UseMaterialsReturn {
   const [showPanel, setShowPanel] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<ProjectMaterial | null>(null);
+  const [materials, setMaterials] = useState<ProjectMaterial[]>([]);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  const materials = getCurrentProject().materials;
+  useEffect(() => {
+    let active = true;
+
+    fetchProjectMaterials()
+      .then((items) => {
+        if (!active) return;
+        setMaterials(items);
+        setConnectionError(null);
+      })
+      .catch((error: Error) => {
+        if (!active) return;
+        setMaterials([]);
+        setConnectionError(error.message);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const togglePanel = useCallback(() => setShowPanel((v) => !v), []);
   const openPanel = useCallback(() => setShowPanel(true), []);
@@ -29,6 +50,7 @@ export function useMaterials(): UseMaterialsReturn {
     showPanel,
     materials,
     selectedMaterial,
+    connectionError,
     togglePanel,
     openPanel,
     closePanel,

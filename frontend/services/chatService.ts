@@ -2,16 +2,15 @@ import { AIResponsePayload } from "@/models/chat";
 import { CitationSource } from "@/models/citation";
 import { MaterialType } from "@/models/project";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-const API_BASE = "/api/v1/query";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+const API_BASE = `${API_BASE_URL}/api/v1/query`;
 const BEARER_TOKEN = import.meta.env.VITE_BEARER_TOKEN ?? "dev-token";
-
-// ─── Backend response shape (mirrors backend ChatResponse) ────────────────────
 
 interface BackendSource {
   document_id: string;
+  material_id?: string | null;
   file_name: string;
+  location?: string | null;
   chunk_index: number;
   score: number;
 }
@@ -24,7 +23,11 @@ interface BackendChatResponse {
   latency_ms: number;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+function requireApiBaseUrl(): void {
+  if (!API_BASE_URL) {
+    throw new Error("VITE_API_BASE_URL nao foi configurada.");
+  }
+}
 
 function inferMaterialType(filename: string): MaterialType {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
@@ -37,79 +40,81 @@ function inferMaterialType(filename: string): MaterialType {
 }
 
 function mapSourcesToCitations(sources: BackendSource[]): CitationSource[] {
-  return sources.map((s) => ({
-    id: s.document_id,
-    filename: s.file_name,
-    type: inferMaterialType(s.file_name),
-    excerpt: `Relevância: ${(s.score * 100).toFixed(0)}% — chunk #${s.chunk_index}`,
-    materialId: s.document_id,
-  }));
+  return sources.map((source) => {
+    const location = source.location ?? `${source.file_name}#chunk-${source.chunk_index}`;
+    return {
+      id: source.document_id,
+      filename: source.file_name,
+      location,
+      type: inferMaterialType(source.file_name),
+      excerpt: `Local: ${location} | Relevancia: ${(source.score * 100).toFixed(0)}%`,
+      materialId: source.material_id ?? source.document_id,
+    };
+  });
 }
 
 function errorMessage(status: number): string {
   switch (status) {
-    case 401: return "Sessão expirada. Recarregue a página e tente novamente.";
-    case 404: return "Nenhum documento indexado encontrado para este projeto.";
-    case 429: return "Limite de requisições atingido. Aguarde alguns instantes e tente novamente.";
-    case 503: return "O serviço de IA está temporariamente indisponível. Tente novamente em instantes.";
-    default:  return "Não foi possível processar sua pergunta no momento. Tente novamente.";
+    case 401:
+      return "Sessao expirada. Recarregue a pagina e tente novamente.";
+    case 404:
+      return "Nenhum documento indexado encontrado para este projeto.";
+    case 429:
+      return "Limite de requisicoes atingido. Aguarde alguns instantes e tente novamente.";
+    case 503:
+      return "O servico de IA esta temporariamente indisponivel.";
+    default:
+      return "Nao foi possivel processar sua pergunta no momento.";
   }
 }
 
-// ─── Public API ────────────────────────────────────────────────────────────────
-
-/**
- * Sends a question to the RAG backend and returns an AIResponsePayload.
- *
- * @param message  - The user's question
- * @param projectId - The project being queried (VITE_PROJECT_ID or fallback)
- * @param sessionId - Session UUID managed by useChat
- */
 export async function sendMessage(
   message: string,
   projectId: string,
   sessionId: string,
 ): Promise<AIResponsePayload> {
-  const resp = await fetch(`${API_BASE}/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${BEARER_TOKEN}`,
-    },
-    body: JSON.stringify({ project_id: projectId, session_id: sessionId, message, top_k: 5 }),
-  });
+  requireApiBaseUrl();
+
+  let resp: Response;
+  try {
+    resp = await fetch(`${API_BASE}/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${BEARER_TOKEN}`,
+      },
+      body: JSON.stringify({ project_id: projectId, session_id: sessionId, message, top_k: 5 }),
+    });
+  } catch {
+    throw new Error("Nao foi possivel conectar ao backend.");
+  }
 
   if (!resp.ok) {
     throw new Error(errorMessage(resp.status));
   }
 
   const data: BackendChatResponse = await resp.json();
-
   return {
     content: data.answer,
     citations: mapSourcesToCitations(data.sources),
   };
 }
 
-/**
- * Clears the session history on the backend.
- */
 export async function clearSession(sessionId: string): Promise<void> {
+  if (!API_BASE_URL) return;
   await fetch(`${API_BASE}/history/${sessionId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${BEARER_TOKEN}` },
   });
 }
 
-/**
- * Sends thumbs up/down feedback for an AI message.
- */
 export async function sendFeedback(
   sessionId: string,
   messageId: string,
   rating: "positive" | "negative",
   comment?: string,
 ): Promise<void> {
+  requireApiBaseUrl();
   await fetch(`${API_BASE}/feedback`, {
     method: "POST",
     headers: {
