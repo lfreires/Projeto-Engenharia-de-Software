@@ -14,6 +14,7 @@
 #   STORAGE_SUFFIX    — sufixo único p/ storage account do tfstate (padrão: gerado automaticamente)
 
 set -euo pipefail
+trap 'echo -e "\n\033[0;31mErro na linha $LINENO — verifique o comando acima.\033[0m" >&2' ERR
 
 # ── Configuração ──────────────────────────────────────────────────────────────
 
@@ -27,11 +28,11 @@ PREFIX="${PREFIX:-docaistudent}"
 # Repos GitHub de cada integrante — edite antes de executar
 # Formato: "usuario_github/nome_do_repo"
 GITHUB_REPOS=(
-  "GITHUB_USER_1/docai-identity-service"
-  "GITHUB_USER_2/docai-project-service"
-  "GITHUB_USER_3/docai-ingestion-service"
-  "GITHUB_USER_4/docai-query-service"
-  "GITHUB_USER_1/docai-frontend"
+  "AnaKlaussen/docai-identity-service"
+  "AnaKlaussen/Project-Sophia"
+  "lfreires/ingestion-service"
+  "GabrielNichols/query-service"
+  "GabrielNichols/DocAI-frontend"
 )
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -53,26 +54,34 @@ tf_apply() {
 log "Verificando login no Azure"
 az account show --output table
 SUB_ID=$(az account show --query id -o tsv)
+TENANT_ID_LOGIN=$(az account show --query tenantId -o tsv)
+az account set --subscription "$SUB_ID"
+# Garantir que o ARM use a subscription correta via variável de ambiente
+export ARM_SUBSCRIPTION_ID="$SUB_ID"
+export ARM_TENANT_ID="$TENANT_ID_LOGIN"
 ok "Subscription: $SUB_ID"
 
 # ── 2. Storage account para Terraform state ───────────────────────────────────
 
 log "Criando storage account para Terraform state"
 
-STORAGE_SUFFIX="${STORAGE_SUFFIX:-$(tr -dc 'a-z0-9' </dev/urandom | head -c 6)}"
+# tr | head causa SIGPIPE com pipefail; usar printf + $RANDOM é portável em bash
+STORAGE_SUFFIX="${STORAGE_SUFFIX:-$(printf '%04x' $((RANDOM + RANDOM)))}"
 TF_STORAGE="${PREFIX}tfstate${STORAGE_SUFFIX}"
 TF_CONTAINER="tfstate"
 
-az group create --name "$RG" --location "$LOCATION" --output none
+az group create --name "$RG" --location "$LOCATION" --subscription "$SUB_ID" --output none
 az storage account create \
   --name "$TF_STORAGE" \
   --resource-group "$RG" \
+  --subscription "$SUB_ID" \
   --sku Standard_LRS \
   --allow-blob-public-access false \
   --output none
 az storage container create \
   --name "$TF_CONTAINER" \
   --account-name "$TF_STORAGE" \
+  --auth-mode login \
   --output none
 
 ok "Storage account: $TF_STORAGE"
@@ -143,7 +152,7 @@ export TF_BACKEND_KEY="ingestion-service.tfstate"
 BACKEND_ARGS[-1]="-backend-config=key=${TF_BACKEND_KEY}"
 
 # Nome do storage account para documentos (globalmente único)
-INGESTION_STORAGE="${PREFIX}docs$(tr -dc 'a-z0-9' </dev/urandom | head -c 4)"
+INGESTION_STORAGE="${PREFIX}docs$(printf '%04x' $((RANDOM + RANDOM)))"
 
 tf_apply "$ROOT_DIR/ingestion-service/terraform" \
   "${BACKEND_ARGS[@]}" \
