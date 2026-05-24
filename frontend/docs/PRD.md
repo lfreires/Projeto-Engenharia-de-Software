@@ -4,13 +4,9 @@
 
 Provide the DocAI chat interface and project material browsing experience.
 
-## Hosting
-
-Target production hosting: Azure Static Web Apps.
-
 ## API Contract
 
-The frontend calls only the API Management base URL:
+The browser uses same-origin endpoints exposed by the consolidated backend:
 
 - `GET /api/v1/projects/{id}`
 - `GET /api/v1/projects/{id}/materials`

@@ -1,10 +1,9 @@
 # Testing
 
-Current validation is Vite build:
+Current frontend validation is the production Vite build:
 
 ```bash
-npm ci
 npm run build
 ```
 
-Add component and E2E tests after the microservice APIs stabilize.
+API contract and RAG workflow coverage live in `backend/tests`.

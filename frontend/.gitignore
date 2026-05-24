@@ -10,8 +10,3 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-.terraform/
-*.tfstate
-*.tfstate.*
-.terraform.lock.hcl
-tfplan

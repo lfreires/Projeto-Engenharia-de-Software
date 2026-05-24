@@ -1,4 +1,4 @@
-# Root kept intentionally small while this temporary monorepo is split into repos.
+# DocAI Render monorepo.
 
 .git/
 .idea/
@@ -13,7 +13,7 @@ Thumbs.db
 .mypy_cache/
 .venv/
 
-# Service-local generated files
+# Generated application files
 **/__pycache__/
 **/*.py[cod]
 **/.env

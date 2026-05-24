@@ -2,8 +2,7 @@ import { AIResponsePayload } from "@/models/chat";
 import { CitationSource } from "@/models/citation";
 import { MaterialType } from "@/models/project";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
-const API_BASE = `${API_BASE_URL}/api/v1/query`;
+const API_BASE = "/api/v1/query";
 const BEARER_TOKEN = import.meta.env.VITE_BEARER_TOKEN ?? "dev-token";
 
 interface BackendSource {
@@ -21,12 +20,6 @@ interface BackendChatResponse {
   model_used: string;
   sources: BackendSource[];
   latency_ms: number;
-}
-
-function requireApiBaseUrl(): void {
-  if (!API_BASE_URL) {
-    throw new Error("VITE_API_BASE_URL nao foi configurada.");
-  }
 }
 
 function inferMaterialType(filename: string): MaterialType {
@@ -73,8 +66,6 @@ export async function sendMessage(
   projectId: string,
   sessionId: string,
 ): Promise<AIResponsePayload> {
-  requireApiBaseUrl();
-
   let resp: Response;
   try {
     resp = await fetch(`${API_BASE}/chat`, {
@@ -101,7 +92,6 @@ export async function sendMessage(
 }
 
 export async function clearSession(sessionId: string): Promise<void> {
-  if (!API_BASE_URL) return;
   await fetch(`${API_BASE}/history/${sessionId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${BEARER_TOKEN}` },
@@ -114,7 +104,6 @@ export async function sendFeedback(
   rating: "positive" | "negative",
   comment?: string,
 ): Promise<void> {
-  requireApiBaseUrl();
   await fetch(`${API_BASE}/feedback`, {
     method: "POST",
     headers: {

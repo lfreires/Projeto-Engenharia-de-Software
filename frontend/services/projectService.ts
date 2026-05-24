@@ -1,6 +1,5 @@
 import { MaterialType, Project, ProjectMaterial } from "@/models/project";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 const BEARER_TOKEN = import.meta.env.VITE_BEARER_TOKEN ?? "dev-token";
 
 export const PROJECT_ID: string = import.meta.env.VITE_PROJECT_ID ?? "proj-demo";
@@ -29,19 +28,11 @@ export class BackendConnectionError extends Error {
   }
 }
 
-function requireApiBaseUrl(): string {
-  if (!API_BASE_URL) {
-    throw new BackendConnectionError("VITE_API_BASE_URL nao foi configurada.");
-  }
-  return API_BASE_URL;
-}
-
 async function fetchJson<T>(path: string): Promise<T> {
-  const baseUrl = requireApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${baseUrl}${path}`, {
+    response = await fetch(path, {
       headers: { Authorization: `Bearer ${BEARER_TOKEN}` },
     });
   } catch {
