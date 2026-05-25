@@ -35,13 +35,11 @@ function inferMaterialType(filename: string): MaterialType {
 
 function mapSourcesToCitations(sources: BackendSource[]): CitationSource[] {
   return sources.map((source) => {
-    const location = source.location ?? `${source.file_name}#chunk-${source.chunk_index}`;
     return {
       id: source.document_id,
       filename: source.file_name,
-      location,
       type: inferMaterialType(source.file_name),
-      excerpt: `Local: ${location} | Relevancia: ${(source.score * 100).toFixed(0)}%`,
+      excerpt: "Documento utilizado para fundamentar esta resposta.",
       materialId: source.material_id ?? source.document_id,
     };
   });

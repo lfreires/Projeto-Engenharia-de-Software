@@ -86,6 +86,10 @@ class DocumentStatusResponse(BaseModel):
     chunk_count: int
 
 
+class DocumentContentResponse(DocumentStatusResponse):
+    content: str
+
+
 class SearchRequest(BaseModel):
     project_id: str = Field(..., min_length=1)
     query: str = Field(..., min_length=1)

@@ -22,6 +22,10 @@ interface BackendMaterial {
   };
 }
 
+interface BackendDocumentContent {
+  content: string;
+}
+
 export class BackendConnectionError extends Error {
   constructor(message: string) {
     super(message);
@@ -61,10 +65,11 @@ function mapBackendMaterial(material: BackendMaterial): ProjectMaterial {
   const filename = material.latest_version.file_name;
   return {
     id: material.id,
+    documentId: material.latest_version.document_id,
     filename,
     type: inferMaterialType(material.content_type, filename),
     label: material.title,
-    description: `Documento ${material.latest_version.document_id}`,
+    description: material.title,
     size: "-",
     lastUpdated: new Date(material.latest_version.created_at).toLocaleDateString("pt-BR"),
     tags: [],
@@ -92,4 +97,11 @@ export async function fetchProjectMaterials(
     `/api/v1/projects/${projectId}/materials`,
   );
   return data.materials.map(mapBackendMaterial);
+}
+
+export async function fetchDocumentContent(documentId: string): Promise<string> {
+  const data = await fetchJson<BackendDocumentContent>(
+    `/api/v1/ingestion/documents/${documentId}/content`,
+  );
+  return data.content;
 }

@@ -14,6 +14,7 @@ export interface SprintStory {
 
 export interface ProjectMaterial {
   id: string;
+  documentId: string;
   filename: string;
   type: MaterialType;
   label: string;

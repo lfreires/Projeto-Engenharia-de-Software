@@ -2,7 +2,13 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.dependencies import get_services
-from app.schemas import DocumentCreateRequest, DocumentStatusResponse, SearchRequest, SearchResponse
+from app.schemas import (
+    DocumentContentResponse,
+    DocumentCreateRequest,
+    DocumentStatusResponse,
+    SearchRequest,
+    SearchResponse,
+)
 from app.services import Services
 
 router = APIRouter(prefix="/api/v1/ingestion", tags=["ingestion"])
@@ -40,6 +46,16 @@ async def document_status(
 ):
     services.authorize(token_value(credentials))
     return services.document_status(document_id)
+
+
+@router.get("/documents/{document_id}/content", response_model=DocumentContentResponse)
+async def document_content(
+    document_id: str,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    services: Services = Depends(get_services),
+):
+    services.authorize(token_value(credentials))
+    return services.document_content(document_id)
 
 
 @router.post("/search", response_model=SearchResponse)

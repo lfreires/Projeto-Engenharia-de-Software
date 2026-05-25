@@ -15,8 +15,10 @@ INTERNAL_AUTH = {"Authorization": "Bearer internal-query-token"}
 
 class FakeChatClient:
     async def complete(self, messages):
-        assert any("Supabase" in message["content"] for message in messages)
-        return "O DocAI armazena vetores no Supabase.", "fake-groq-model"
+        prompt = "\n".join(message["content"] for message in messages)
+        assert "Azure AI Search" in prompt
+        assert "#chunk-" not in prompt
+        return "A arquitetura original usa Azure AI Search [architecture.md].", "fake-groq-model"
 
 
 class FailingAppendStore(MemoryStore):
@@ -52,10 +54,18 @@ async def test_health_and_seed_catalog_are_available(runtime):
 
     project = await client.get("/api/v1/projects/proj-demo", headers=AUTH)
     materials = await client.get("/api/v1/projects/proj-demo/materials", headers=AUTH)
+    document_id = materials.json()["materials"][0]["latest_version"]["document_id"]
+    content = await client.get(
+        f"/api/v1/ingestion/documents/{document_id}/content", headers=AUTH
+    )
 
     assert project.status_code == 200
     assert project.json()["name"] == "DocAI Demo"
-    assert materials.json()["materials"][0]["latest_version"]["document_id"].startswith("doc-")
+    assert document_id.startswith("doc-")
+    assert content.status_code == 200
+    assert "Azure AI Search" in content.json()["content"]
+    assert "identity-service" in content.json()["content"]
+    assert "\n\n## Servicos independentes\n\n" in content.json()["content"]
 
 
 @pytest.mark.asyncio
@@ -99,7 +109,8 @@ async def test_document_index_is_idempotent_and_searchable(runtime):
 
     assert first.status_code == 201
     assert second.json()["document_id"] == first.json()["document_id"]
-    assert any(chunk["file_name"] == "new.md" for chunk in results.json()["chunks"])
+    assert results.json()["chunks"]
+    assert all(chunk["file_name"] == "new.md" for chunk in results.json()["chunks"])
 
 
 @pytest.mark.asyncio
@@ -137,6 +148,7 @@ async def test_chat_history_and_feedback_persist_through_store(runtime):
 
     assert response.status_code == 200
     assert response.json()["sources"]
+    assert len(response.json()["sources"]) == 1
     assert len(history.json()["turns"]) == 2
     assert feedback.json() == {"accepted": True, "message_id": "message-1"}
     assert store.feedback["message-1"].rating == "positive"
@@ -229,7 +241,11 @@ def test_migration_defines_vector_and_persistent_domains():
     migration = (Path(__file__).parents[1] / "migrations" / "001_initial.sql").read_text(
         encoding="utf-8"
     )
+    content_migration = (
+        Path(__file__).parents[1] / "migrations" / "002_document_content.sql"
+    ).read_text(encoding="utf-8")
     assert "EXTENSION IF NOT EXISTS vector" in migration
     assert "embedding extensions.vector(768)" in migration
     for table in ["projects", "document_chunks", "chat_sessions", "feedback", "api_tokens"]:
         assert f"CREATE TABLE IF NOT EXISTS {table}" in migration
+    assert "ADD COLUMN IF NOT EXISTS content TEXT" in content_migration

@@ -7,6 +7,7 @@ from app.config import Settings
 from app.schemas import (
     ChatRequest,
     ChatResponse,
+    DocumentContentResponse,
     DocumentCreateRequest,
     DocumentStatusResponse,
     FeedbackRequest,
@@ -24,12 +25,49 @@ from app.schemas import (
 )
 from app.storage import Store, content_digest, new_document_id
 
-SEED_DOCUMENT = """# DocAI no Render
+SEED_DOCUMENT = """# Arquitetura original planejada do DocAI
 
-O DocAI e uma aplicacao RAG publicada como monorepo. O Render executa uma API
-FastAPI unica que tambem entrega o frontend React. Os dados persistentes e os
-vetores ficam no PostgreSQL do Supabase com pgvector. O Gemini gera embeddings
-e o Groq gera respostas fundamentadas nos documentos recuperados.
+## Objetivo
+
+O DocAI foi planejado como um sistema RAG baseado em microservicos. O usuario
+seleciona um projeto, consulta os materiais indexados e recebe respostas
+fundamentadas em documentos recuperados.
+
+## Servicos independentes
+
+- `frontend`: SPA React/Vite para catalogo de projeto, materiais e chat,
+  publicada no Azure Static Web Apps.
+- `identity-service`: validacao de tokens bearer e memberships de projeto,
+  com Azure SQL Database como armazenamento planejado.
+- `project-service`: catalogo de projetos, materiais e versoes, com Azure
+  Database for PostgreSQL Flexible Server como destino de persistencia.
+- `ingestion-service`: recebe documentos, divide o texto em chunks e indexa
+  conteudo para recuperacao, usando Azure Blob Storage e Azure AI Search.
+- `query-service`: orquestra a consulta RAG, busca trechos pelo
+  `ingestion-service`, constroi o prompt e usa Groq via LangChain para gerar
+  respostas; historico e feedback seriam persistidos no Azure Cosmos DB.
+
+## Comunicacao e infraestrutura Azure
+
+O frontend acessaria as rotas publicas pelo Azure API Management. Os quatro
+backends seriam implantados separadamente no Azure Container Apps, com imagens
+no Azure Container Registry. O Azure Key Vault armazenaria segredos. Cada
+repositorio teria CI/CD proprio no GitHub Actions, autenticando no Azure por
+OIDC com Managed Identity.
+
+## Fluxo de consulta
+
+1. O frontend envia o token bearer e a pergunta pelo API Management.
+2. O servico responsavel valida acesso junto ao `identity-service`.
+3. O `query-service` solicita ao `ingestion-service` os documentos relevantes.
+4. O `ingestion-service` recupera trechos indexados no Azure AI Search.
+5. O `query-service` envia o contexto ao Groq e devolve resposta com fontes.
+
+## Observacao sobre a demonstracao
+
+O deploy gratuito atual em Render e Supabase e um fallback operacional para
+demonstrar o produto. Ele preserva as rotas da API, mas nao substitui a
+arquitetura Azure distribuida originalmente planejada.
 """
 
 
@@ -130,6 +168,7 @@ class Services:
         self.store.add_document(
             document,
             digest,
+            request.content,
             chunks,
             self.settings.embedding_model,
             self.settings.embedding_dimensions,
@@ -144,6 +183,19 @@ class Services:
                 detail={"code": "DOCUMENT_NOT_FOUND", "message": "Document not found."},
             )
         return document
+
+    def document_content(self, document_id: str) -> DocumentContentResponse:
+        document = self.document_status(document_id)
+        content = self.store.get_document_content(document_id)
+        if content is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "DOCUMENT_CONTENT_NOT_FOUND",
+                    "message": "Document content not found.",
+                },
+            )
+        return DocumentContentResponse(**document.model_dump(), content=content)
 
     async def search(self, request: SearchRequest) -> SearchResponse:
         vector = await self.embedding_client.embed_query(request.query)  # type: ignore[attr-defined]
@@ -196,17 +248,7 @@ class Services:
             session_id=request.session_id,
             answer=answer,
             model_used=model,
-            sources=[
-                SourceItem(
-                    document_id=chunk.document_id,
-                    material_id=chunk.material_id,
-                    file_name=chunk.file_name,
-                    location=chunk.location,
-                    chunk_index=chunk.chunk_index,
-                    score=chunk.score,
-                )
-                for chunk in search.chunks
-            ],
+            sources=source_items(search.chunks),
             latency_ms=int((time.perf_counter() - started) * 1000),
         )
 
@@ -233,7 +275,7 @@ def build_messages(
     max_context_words: int,
 ) -> list[dict[str, str]]:
     context = "\n\n".join(
-        f"[{chunk.file_name}#chunk-{chunk.chunk_index}] {chunk.chunk_text}" for chunk in chunks
+        f"[Fonte: {chunk.file_name}]\n{chunk.chunk_text}" for chunk in chunks
     )
     context = " ".join(context.split()[:max_context_words])
     messages = [
@@ -241,7 +283,8 @@ def build_messages(
             "role": "system",
             "content": (
                 "Responda somente com base no contexto recuperado. "
-                "Quando apropriado, cite o arquivo e o chunk usados."
+                "Quando apropriado, cite apenas o nome do arquivo, por exemplo "
+                "[architecture.md]. Nao exponha identificadores internos de chunks."
             ),
         }
     ]
@@ -250,6 +293,26 @@ def build_messages(
         {"role": "user", "content": f"Contexto:\n{context}\n\nPergunta: {question}"}
     )
     return messages
+
+
+def source_items(chunks: list[SearchChunk]) -> list[SourceItem]:
+    sources: list[SourceItem] = []
+    document_ids: set[str] = set()
+    for chunk in chunks:
+        if chunk.document_id in document_ids:
+            continue
+        document_ids.add(chunk.document_id)
+        sources.append(
+            SourceItem(
+                document_id=chunk.document_id,
+                material_id=chunk.material_id,
+                file_name=chunk.file_name,
+                location=chunk.location,
+                chunk_index=chunk.chunk_index,
+                score=chunk.score,
+            )
+        )
+    return sources
 
 
 def _project_not_found() -> None:

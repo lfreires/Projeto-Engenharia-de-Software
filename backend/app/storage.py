@@ -52,12 +52,15 @@ class Store(Protocol):
         self,
         document: DocumentStatusResponse,
         content_hash: str,
+        content: str,
         chunks: list[tuple[str, list[float]]],
         embedding_model: str,
         embedding_dimensions: int,
     ) -> None: ...
 
     def get_document(self, document_id: str) -> DocumentStatusResponse | None: ...
+
+    def get_document_content(self, document_id: str) -> str | None: ...
 
     def search(
         self,
@@ -231,6 +234,7 @@ class PostgresStore:
         self,
         document: DocumentStatusResponse,
         content_hash: str,
+        content: str,
         chunks: list[tuple[str, list[float]]],
         embedding_model: str,
         embedding_dimensions: int,
@@ -238,14 +242,16 @@ class PostgresStore:
         with self._connection() as connection:
             connection.execute(
                 "INSERT INTO documents "
-                "(id, project_id, material_id, file_name, content_hash, status, chunk_count) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                "(id, project_id, material_id, file_name, content_hash, content, "
+                "status, chunk_count) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                 (
                     document.document_id,
                     document.project_id,
                     document.material_id,
                     document.file_name,
                     content_hash,
+                    content,
                     document.status,
                     document.chunk_count,
                 ),
@@ -290,6 +296,17 @@ class PostgresStore:
             ).fetchone()
         return DocumentStatusResponse(**row) if row else None
 
+    def get_document_content(self, document_id: str) -> str | None:
+        with self._connection() as connection:
+            row = connection.execute(
+                "SELECT COALESCE(d.content, "
+                "string_agg(c.chunk_text, E'\n\n' ORDER BY c.chunk_index)) AS content "
+                "FROM documents d LEFT JOIN document_chunks c ON c.document_id = d.id "
+                "WHERE d.id = %s GROUP BY d.content",
+                (document_id,),
+            ).fetchone()
+        return row["content"] if row and row["content"] is not None else None
+
     def search(
         self,
         project_id: str,
@@ -300,12 +317,17 @@ class PostgresStore:
     ) -> list[SearchChunk]:
         with self._connection() as connection:
             rows = connection.execute(
-                "SELECT document_id, project_id, material_id, file_name, chunk_index, chunk_text, "
-                "file_name || '#chunk-' || chunk_index AS location, "
-                "1 - (embedding OPERATOR(extensions.<=>) %s::extensions.vector) AS score "
-                "FROM document_chunks WHERE project_id = %s AND embedding_model = %s "
-                "AND embedding_dimensions = %s "
-                "ORDER BY embedding OPERATOR(extensions.<=>) %s::extensions.vector LIMIT %s",
+                "SELECT c.document_id, c.project_id, c.material_id, c.file_name, "
+                "c.chunk_index, c.chunk_text, "
+                "c.file_name || '#chunk-' || c.chunk_index AS location, "
+                "1 - (c.embedding OPERATOR(extensions.<=>) %s::extensions.vector) AS score "
+                "FROM document_chunks c JOIN material_versions v "
+                "ON v.material_id = c.material_id AND v.document_id = c.document_id "
+                "WHERE c.project_id = %s AND c.embedding_model = %s "
+                "AND c.embedding_dimensions = %s "
+                "AND v.version = (SELECT max(latest.version) FROM material_versions latest "
+                "WHERE latest.material_id = v.material_id) "
+                "ORDER BY c.embedding OPERATOR(extensions.<=>) %s::extensions.vector LIMIT %s",
                 (
                     _vector_literal(embedding),
                     project_id,
@@ -425,6 +447,7 @@ class MemoryStore:
         self.projects: dict[str, Project] = {}
         self.materials: dict[str, Material] = {}
         self.documents: dict[str, DocumentStatusResponse] = {}
+        self.document_contents: dict[str, str] = {}
         self.document_hashes: dict[tuple[str, str, str], str] = {}
         self.chunks: list[tuple[SearchChunk, list[float], str, int]] = []
         self.history: dict[str, list[HistoryTurn]] = {}
@@ -484,11 +507,13 @@ class MemoryStore:
         self,
         document: DocumentStatusResponse,
         content_hash: str,
+        content: str,
         chunks: list[tuple[str, list[float]]],
         embedding_model: str,
         embedding_dimensions: int,
     ) -> None:
         self.documents[document.document_id] = document
+        self.document_contents[document.document_id] = content
         self.document_hashes[(document.project_id, document.material_id, content_hash)] = (
             document.document_id
         )
@@ -518,6 +543,20 @@ class MemoryStore:
     def get_document(self, document_id: str) -> DocumentStatusResponse | None:
         return self.documents.get(document_id)
 
+    def get_document_content(self, document_id: str) -> str | None:
+        content = self.document_contents.get(document_id)
+        if content is not None:
+            return content
+        chunks = [
+            chunk
+            for chunk, _, _, _ in self.chunks
+            if chunk.document_id == document_id
+        ]
+        if not chunks:
+            return None
+        chunks.sort(key=lambda chunk: chunk.chunk_index)
+        return "\n\n".join(chunk.chunk_text for chunk in chunks)
+
     def search(
         self,
         project_id: str,
@@ -528,10 +567,13 @@ class MemoryStore:
     ) -> list[SearchChunk]:
         results: list[SearchChunk] = []
         for chunk, stored_embedding, model, dimensions in self.chunks:
+            material = self.materials.get(chunk.material_id)
             if (
                 chunk.project_id != project_id
                 or model != embedding_model
                 or dimensions != embedding_dimensions
+                or material is None
+                or material.latest_version.document_id != chunk.document_id
             ):
                 continue
             score = _cosine_similarity(embedding, stored_embedding)

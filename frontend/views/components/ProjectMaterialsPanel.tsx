@@ -2,11 +2,13 @@ import React from "react";
 import { X, FolderOpen, Search } from "lucide-react";
 import { ProjectMaterial } from "@/models/project";
 import { MaterialCard } from "./MaterialCard";
+import { MaterialViewer } from "./MaterialViewer";
 
 interface ProjectMaterialsPanelProps {
   materials: ProjectMaterial[];
   selectedMaterial: ProjectMaterial | null;
   onSelectMaterial: (material: ProjectMaterial) => void;
+  onClearSelection: () => void;
   onClose: () => void;
 }
 
@@ -14,6 +16,7 @@ export function ProjectMaterialsPanel({
   materials,
   selectedMaterial,
   onSelectMaterial,
+  onClearSelection,
   onClose,
 }: ProjectMaterialsPanelProps) {
   const [filter, setFilter] = React.useState("");
@@ -30,7 +33,7 @@ export function ProjectMaterialsPanel({
   return (
     <div
       className="flex flex-col h-full shrink-0"
-      style={{ width: "280px", borderLeft: "0.5px solid #e2e5ee", backgroundColor: "#ffffff" }}
+      style={{ width: "390px", borderLeft: "0.5px solid #e2e5ee", backgroundColor: "#ffffff" }}
     >
       {/* Header */}
       <div
@@ -63,6 +66,10 @@ export function ProjectMaterialsPanel({
         </button>
       </div>
 
+      {selectedMaterial ? (
+        <MaterialViewer material={selectedMaterial} onBack={onClearSelection} />
+      ) : (
+        <>
       {/* Search */}
       <div className="px-4 py-3" style={{ borderBottom: "0.5px solid #f0f1f8" }}>
         <div
@@ -121,9 +128,11 @@ export function ProjectMaterialsPanel({
         style={{ borderTop: "0.5px solid #e5e8f0", backgroundColor: "#f8f9fc" }}
       >
         <p style={{ fontSize: "10.5px", color: "#b0b5c8", margin: 0, textAlign: "center" }}>
-          Clique num material para visualizá-lo no chat
+          Clique num material para abrir o documento
         </p>
       </div>
+        </>
+      )}
     </div>
   );
 }
