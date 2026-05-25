@@ -1,6 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
 import { ProjectMaterial } from "@/models/project";
-import { fetchProjectMaterials, uploadProjectDocument } from "@/services/projectService";
+import {
+  deleteProjectMaterial,
+  fetchProjectMaterials,
+  uploadProjectDocument,
+} from "@/services/projectService";
 
 export interface UseMaterialsReturn {
   showPanel: boolean;
@@ -13,6 +17,7 @@ export interface UseMaterialsReturn {
   selectMaterial: (material: ProjectMaterial) => void;
   clearSelection: () => void;
   uploadMaterial: (file: File) => Promise<void>;
+  deleteMaterial: (material: ProjectMaterial) => Promise<void>;
 }
 
 export function useMaterials(): UseMaterialsReturn {
@@ -55,6 +60,13 @@ export function useMaterials(): UseMaterialsReturn {
     setShowPanel(true);
     if (material) setSelectedMaterial(material);
   }, []);
+  const deleteMaterial = useCallback(async (material: ProjectMaterial) => {
+    await deleteProjectMaterial(material.id);
+    const items = await fetchProjectMaterials();
+    setMaterials(items);
+    setConnectionError(null);
+    setSelectedMaterial((selected) => (selected?.id === material.id ? null : selected));
+  }, []);
 
   return {
     showPanel,
@@ -67,5 +79,6 @@ export function useMaterials(): UseMaterialsReturn {
     selectMaterial,
     clearSelection,
     uploadMaterial,
+    deleteMaterial,
   };
 }

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.dependencies import get_services
@@ -45,3 +45,15 @@ async def materials(
 ):
     services.authorize(token_value(credentials), project_id)
     return services.list_materials(project_id)
+
+
+@router.delete("/{project_id}/materials/{material_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_material(
+    project_id: str,
+    material_id: str,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    services: Services = Depends(get_services),
+):
+    services.authorize(token_value(credentials), project_id)
+    services.delete_material(project_id, material_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

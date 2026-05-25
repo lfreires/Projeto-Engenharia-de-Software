@@ -140,3 +140,23 @@ export async function uploadProjectDocument(
   }
   return response.json() as Promise<BackendUploadResponse>;
 }
+
+export async function deleteProjectMaterial(
+  materialId: string,
+  projectId: string = PROJECT_ID,
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/v1/projects/${projectId}/materials/${materialId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${BEARER_TOKEN}` },
+    });
+  } catch {
+    throw new BackendConnectionError("Nao foi possivel conectar ao backend.");
+  }
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    const message = payload?.detail?.message ?? `Backend respondeu com HTTP ${response.status}.`;
+    throw new BackendConnectionError(message);
+  }
+}

@@ -18,6 +18,8 @@ Static Site `*.onrender.com` via CORS.
 No painel **Materiais**, o usuario pode enviar arquivos `PDF`, `DOCX`, `TXT`
 ou `MD` de ate 10 MB. A indexacao ocorre durante o envio e o leitor exibe o
 texto extraido; o arquivo original nao e armazenado.
+Materiais ja indexados podem ser excluidos no painel ou no leitor; apos a
+confirmacao, o documento deixa de ser utilizado pelo chat.
 
 ## Desenvolvimento
 

@@ -63,6 +63,12 @@ class Store(Protocol):
 
     def has_material(self, project_id: str, material_id: str) -> bool: ...
 
+    def list_material_documents(
+        self, project_id: str, material_id: str
+    ) -> list[DocumentStatusResponse]: ...
+
+    def delete_material(self, project_id: str, material_id: str) -> bool: ...
+
     def get_document_by_hash(
         self, project_id: str, material_id: str, content_hash: str
     ) -> DocumentStatusResponse | None: ...
@@ -240,6 +246,26 @@ class PostgresStore:
                 "SELECT 1 FROM materials WHERE project_id = %s AND id = %s",
                 (project_id, material_id),
             ).fetchone()
+        return row is not None
+
+    def list_material_documents(
+        self, project_id: str, material_id: str
+    ) -> list[DocumentStatusResponse]:
+        with self._connection() as connection:
+            rows = connection.execute(
+                f"SELECT {DOCUMENT_FIELDS} FROM documents "
+                "WHERE project_id = %s AND material_id = %s ORDER BY id",
+                (project_id, material_id),
+            ).fetchall()
+        return [DocumentStatusResponse(**row) for row in rows]
+
+    def delete_material(self, project_id: str, material_id: str) -> bool:
+        with self._connection() as connection:
+            row = connection.execute(
+                "DELETE FROM materials WHERE project_id = %s AND id = %s RETURNING id",
+                (project_id, material_id),
+            ).fetchone()
+            connection.commit()
         return row is not None
 
     def get_document_by_hash(
@@ -497,6 +523,33 @@ class MemoryStore:
     def has_material(self, project_id: str, material_id: str) -> bool:
         material = self.materials.get(material_id)
         return material is not None and material.project_id == project_id
+
+    def list_material_documents(
+        self, project_id: str, material_id: str
+    ) -> list[DocumentStatusResponse]:
+        return [
+            document
+            for document in self.documents.values()
+            if document.project_id == project_id and document.material_id == material_id
+        ]
+
+    def delete_material(self, project_id: str, material_id: str) -> bool:
+        if not self.has_material(project_id, material_id):
+            return False
+        document_ids = {
+            document.document_id
+            for document in self.list_material_documents(project_id, material_id)
+        }
+        self.materials.pop(material_id, None)
+        for document_id in document_ids:
+            self.documents.pop(document_id, None)
+            self.document_contents.pop(document_id, None)
+        self.document_hashes = {
+            key: document_id
+            for key, document_id in self.document_hashes.items()
+            if document_id not in document_ids
+        }
+        return True
 
     def get_document_by_hash(
         self, project_id: str, material_id: str, content_hash: str

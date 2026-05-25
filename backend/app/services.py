@@ -99,6 +99,30 @@ class Services:
         self.get_project(project_id)
         return MaterialsResponse(materials=self.store.list_materials(project_id))
 
+    def delete_material(self, project_id: str, material_id: str) -> None:
+        self.get_project(project_id)
+        if not self.store.has_material(project_id, material_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "MATERIAL_NOT_FOUND", "message": "Material not found."},
+            )
+        documents = self.store.list_material_documents(project_id, material_id)
+        try:
+            self.vector_index.delete_documents(documents)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={
+                    "code": "DELETE_INDEX_FAILED",
+                    "message": "Material vector removal failed.",
+                },
+            ) from exc
+        if not self.store.delete_material(project_id, material_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "MATERIAL_NOT_FOUND", "message": "Material not found."},
+            )
+
     async def upload_document(
         self, project_id: str, file_name: str, payload: bytes
     ) -> DocumentStatusResponse:

@@ -13,6 +13,7 @@ from langchain_postgres import PGVector
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 
 from app.config import Settings
+from app.schemas import DocumentStatusResponse
 
 CONTENT_TYPES = {
     ".pdf": "application/pdf",
@@ -79,6 +80,8 @@ class VectorIndex(Protocol):
 
     def add_documents(self, documents: list[Document], ids: list[str]) -> None: ...
 
+    def delete_documents(self, documents: list[DocumentStatusResponse]) -> None: ...
+
     def search(self, query: str, project_id: str, top_k: int) -> list[tuple[Document, float]]: ...
 
 
@@ -111,6 +114,11 @@ class LangChainPGVectorIndex:
             ids=ids,
         )
 
+    def delete_documents(self, documents: list[DocumentStatusResponse]) -> None:
+        ids = _vector_ids(documents)
+        if ids:
+            self._require_store().delete(ids=ids)
+
     def search(self, query: str, project_id: str, top_k: int) -> list[tuple[Document, float]]:
         matches = self._require_store().similarity_search_with_score(
             query,
@@ -135,12 +143,25 @@ class MemoryVectorIndex:
     def add_documents(self, documents: list[Document], ids: list[str]) -> None:
         self._store.add_documents(documents=documents, ids=ids)
 
+    def delete_documents(self, documents: list[DocumentStatusResponse]) -> None:
+        ids = _vector_ids(documents)
+        if ids:
+            self._store.delete(ids=ids)
+
     def search(self, query: str, project_id: str, top_k: int) -> list[tuple[Document, float]]:
         return self._store.similarity_search_with_score(
             query,
             k=top_k,
             filter=lambda document: document.metadata.get("project_id") == project_id,
         )
+
+
+def _vector_ids(documents: list[DocumentStatusResponse]) -> list[str]:
+    return [
+        f"{document.document_id}:{chunk_index}"
+        for document in documents
+        for chunk_index in range(document.chunk_count)
+    ]
 
 
 def canonical_content_type(file_name: str) -> str:

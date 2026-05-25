@@ -32,3 +32,6 @@ O seed cria somente `proj-demo`, usuario e tokens. Use
 `POST /api/v1/ingestion/uploads` (`project_id` + `file`) para indexar arquivos
 `PDF`, `DOCX`, `TXT` ou `MD` de ate 10 MB. O texto extraido e persistido para
 leitura; o binario enviado nao e armazenado.
+Materiais indexados podem ser removidos por
+`DELETE /api/v1/projects/{project_id}/materials/{material_id}`; a remocao
+elimina o catalogo e os vetores usados pelo retrieval.

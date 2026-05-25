@@ -39,6 +39,12 @@ class FailingVectorIndex(MemoryVectorIndex):
         raise RuntimeError("embedding unavailable")
 
 
+class FailingDeleteVectorIndex(MemoryVectorIndex):
+    def delete_documents(self, documents):
+        del documents
+        raise RuntimeError("vector delete unavailable")
+
+
 def make_services(store: MemoryStore | None = None, vector_index=None) -> Services:
     settings = Settings(seed_demo_data=False, embedding_dimensions=768)
     services = Services(
@@ -126,6 +132,49 @@ async def test_markdown_upload_creates_material_content_and_searchable_chunks(ru
     assert materials.json()["materials"][0]["id"] == body["material_id"]
     assert results.json()["chunks"][0]["file_name"] == "requirements.md"
     assert "#chunk-" not in results.json()["chunks"][0]["location"]
+
+
+@pytest.mark.asyncio
+async def test_delete_material_removes_content_and_retrieval_chunks(runtime):
+    client, _, _ = runtime
+    uploaded = (await upload_text(client)).json()
+    deleted = await client.delete(
+        f"/api/v1/projects/proj-demo/materials/{uploaded['material_id']}", headers=AUTH
+    )
+    materials = await client.get("/api/v1/projects/proj-demo/materials", headers=AUTH)
+    content = await client.get(
+        f"/api/v1/ingestion/documents/{uploaded['document_id']}/content", headers=AUTH
+    )
+    results = await client.post(
+        "/api/v1/ingestion/search",
+        json={"project_id": "proj-demo", "query": "Supabase vetores", "top_k": 5},
+        headers=AUTH,
+    )
+    second_delete = await client.delete(
+        f"/api/v1/projects/proj-demo/materials/{uploaded['material_id']}", headers=AUTH
+    )
+    assert deleted.status_code == 204
+    assert materials.json() == {"materials": []}
+    assert content.status_code == 404
+    assert results.json() == {"chunks": []}
+    assert second_delete.status_code == 404
+    assert second_delete.json()["detail"]["code"] == "MATERIAL_NOT_FOUND"
+
+
+@pytest.mark.asyncio
+async def test_delete_material_preserves_catalog_if_vector_removal_fails():
+    store = MemoryStore()
+    services = make_services(store, FailingDeleteVectorIndex(DeterministicEmbeddings(768)))
+    await services.seed()
+    app = create_app(services.settings, services)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        uploaded = (await upload_text(client)).json()
+        response = await client.delete(
+            f"/api/v1/projects/proj-demo/materials/{uploaded['material_id']}", headers=AUTH
+        )
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "DELETE_INDEX_FAILED"
+    assert store.list_materials("proj-demo")[0].id == uploaded["material_id"]
 
 
 @pytest.mark.asyncio

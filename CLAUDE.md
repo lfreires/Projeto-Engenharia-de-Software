@@ -80,6 +80,8 @@ application persists extracted text for the reader, not the original binary.
 
 Markdown headings and PDF page metadata are retained in retrieval metadata.
 Chat citations expose the document name rather than internal chunk IDs.
+Users can delete a material from the Materials panel; the backend removes its
+catalog rows and PGVector embeddings before it disappears from retrieval.
 
 ## Development Commands
 

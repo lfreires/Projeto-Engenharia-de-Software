@@ -11,6 +11,7 @@ interface ProjectMaterialsPanelProps {
   onSelectMaterial: (material: ProjectMaterial) => void;
   onClearSelection: () => void;
   onUpload: (file: File) => Promise<void>;
+  onDelete: (material: ProjectMaterial) => Promise<void>;
   onClose: () => void;
 }
 
@@ -20,9 +21,29 @@ export function ProjectMaterialsPanel({
   onSelectMaterial,
   onClearSelection,
   onUpload,
+  onDelete,
   onClose,
 }: ProjectMaterialsPanelProps) {
   const [filter, setFilter] = React.useState("");
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+
+  async function handleDelete(material: ProjectMaterial) {
+    const confirmed = window.confirm(
+      `Excluir "${material.filename}"? Ele deixara de ser usado nas respostas do chat.`,
+    );
+    if (!confirmed) return;
+    setDeletingId(material.id);
+    setDeleteError(null);
+    try {
+      await onDelete(material);
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : "Nao foi possivel excluir.";
+      setDeleteError(message);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const filtered = filter.trim()
     ? materials.filter(
@@ -69,8 +90,22 @@ export function ProjectMaterialsPanel({
         </button>
       </div>
 
+      {deleteError && (
+        <p
+          className="mx-4 mt-3 rounded-md px-3 py-2"
+          style={{ fontSize: "11.5px", color: "#991b1b", backgroundColor: "#fef2f2" }}
+        >
+          Falha ao excluir: {deleteError}
+        </p>
+      )}
+
       {selectedMaterial ? (
-        <MaterialViewer material={selectedMaterial} onBack={onClearSelection} />
+        <MaterialViewer
+          material={selectedMaterial}
+          onBack={onClearSelection}
+          onDelete={handleDelete}
+          isDeleting={deletingId === selectedMaterial.id}
+        />
       ) : (
         <>
       <MaterialUpload onUpload={onUpload} />
@@ -123,6 +158,8 @@ export function ProjectMaterialsPanel({
               material={m}
               onSelect={onSelectMaterial}
               isSelected={selectedMaterial?.id === m.id}
+              onDelete={handleDelete}
+              isDeleting={deletingId === m.id}
             />
           ))
         )}

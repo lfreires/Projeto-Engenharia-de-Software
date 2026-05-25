@@ -1,5 +1,5 @@
 import React from "react";
-import { FileText, FileSpreadsheet, FileCode2, Database, Eye } from "lucide-react";
+import { Database, Eye, FileCode2, FileSpreadsheet, FileText, LoaderCircle, Trash2 } from "lucide-react";
 import { ProjectMaterial, MaterialType } from "@/models/project";
 
 const TYPE_CONFIG: Record<MaterialType, { label: string; color: string; bg: string; border: string; Icon: React.ElementType }> = {
@@ -17,9 +17,11 @@ interface MaterialCardProps {
   material: ProjectMaterial;
   onSelect?: (material: ProjectMaterial) => void;
   isSelected?: boolean;
+  onDelete?: (material: ProjectMaterial) => void;
+  isDeleting?: boolean;
 }
 
-export function MaterialCard({ material, onSelect, isSelected }: MaterialCardProps) {
+export function MaterialCard({ material, onSelect, isSelected, onDelete, isDeleting }: MaterialCardProps) {
   const config = TYPE_CONFIG[material.type];
   const Icon = config.Icon;
 
@@ -125,10 +127,28 @@ export function MaterialCard({ material, onSelect, isSelected }: MaterialCardPro
           )}
         </div>
 
-        <Eye
-          size={13}
-          style={{ color: "#c0c4d6", flexShrink: 0, marginTop: "2px" }}
-        />
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            title="Excluir material"
+            aria-label={`Excluir ${material.filename}`}
+            disabled={isDeleting}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete?.(material);
+            }}
+            style={{
+              border: "none",
+              background: "none",
+              padding: "2px",
+              color: "#c0c4d6",
+              cursor: isDeleting ? "wait" : "pointer",
+            }}
+          >
+            {isDeleting ? <LoaderCircle size={13} /> : <Trash2 size={13} />}
+          </button>
+          <Eye size={13} style={{ color: "#c0c4d6", flexShrink: 0 }} />
+        </div>
       </div>
     </div>
   );

@@ -1,14 +1,16 @@
 import React from "react";
-import { ArrowLeft, FileText, LoaderCircle } from "lucide-react";
+import { ArrowLeft, FileText, LoaderCircle, Trash2 } from "lucide-react";
 import { ProjectMaterial } from "@/models/project";
 import { fetchDocumentContent } from "@/services/projectService";
 
 interface MaterialViewerProps {
   material: ProjectMaterial;
   onBack: () => void;
+  onDelete: (material: ProjectMaterial) => void;
+  isDeleting: boolean;
 }
 
-export function MaterialViewer({ material, onBack }: MaterialViewerProps) {
+export function MaterialViewer({ material, onBack, onDelete, isDeleting }: MaterialViewerProps) {
   const [content, setContent] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -54,9 +56,27 @@ export function MaterialViewer({ material, onBack }: MaterialViewerProps) {
         </button>
         <div className="flex items-center gap-2 mt-3">
           <FileText size={15} style={{ color: "#2563eb" }} />
-          <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e2035" }}>
+          <span className="flex-1 truncate" style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e2035" }}>
             {material.filename}
           </span>
+          <button
+            type="button"
+            disabled={isDeleting}
+            onClick={() => onDelete(material)}
+            className="flex items-center gap-1"
+            style={{
+              fontSize: "11px",
+              color: "#b91c1c",
+              border: "0.5px solid #fecaca",
+              backgroundColor: "#fef2f2",
+              borderRadius: "6px",
+              padding: "4px 7px",
+              cursor: isDeleting ? "wait" : "pointer",
+            }}
+          >
+            {isDeleting ? <LoaderCircle size={12} /> : <Trash2 size={12} />}
+            Excluir
+          </button>
         </div>
       </div>
 
