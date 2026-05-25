@@ -62,9 +62,10 @@ The browser token is demonstrative and is not production authentication.
 Use a Supabase Session Pooler or Transaction Pooler `DATABASE_URL`: Render
 cannot reach Supabase's direct IPv6-only `db.<ref>.supabase.co` host.
 
-The frontend build requires `VITE_API_BASE_URL` set to the public Render URL
-of the backend service. The API permits Render static-site origins through
-CORS for this demonstration deployment.
+The frontend build receives `VITE_API_BASE_URL=https://docai-v8qm.onrender.com`
+from the Blueprint, matching the currently provisioned backend URL. The API
+permits Render static-site origins through CORS for this demonstration
+deployment.
 
 ## Development Commands
 

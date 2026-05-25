@@ -5,8 +5,7 @@ services:
     plan: free
     branch: render-deploy
     rootDir: backend
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile
     autoDeployTrigger: commit
     healthCheckPath: /health
     envVars:
@@ -37,11 +36,11 @@ services:
     branch: render-deploy
     rootDir: frontend
     buildCommand: npm ci && npm run build
-    staticPublishPath: ./frontend/dist
+    staticPublishPath: ./dist
     autoDeployTrigger: commit
     envVars:
       - key: VITE_API_BASE_URL
-        sync: false
+        value: https://docai-v8qm.onrender.com
       - key: VITE_PROJECT_ID
         value: proj-demo
       - key: VITE_BEARER_TOKEN

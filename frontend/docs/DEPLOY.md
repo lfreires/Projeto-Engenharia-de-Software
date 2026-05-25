@@ -6,10 +6,10 @@ mesmo Blueprint.
 
 Valores de build:
 
-- `VITE_API_BASE_URL=https://<servico-api>.onrender.com`
+- `VITE_API_BASE_URL=https://docai-v8qm.onrender.com`
 - `VITE_PROJECT_ID=proj-demo`
 - `VITE_BEARER_TOKEN=dev-token`
 
-Como o Render nao fornece automaticamente a URL publica de outro servico para
-um build de Static Site, defina `VITE_API_BASE_URL` no dashboard apos a API
-receber sua URL publica e execute novo deploy do frontend.
+A URL do backend atualmente provisionado foi registrada na Blueprint para que
+o Static Site ja seja construido conectado. Atualize esse valor caso o backend
+seja recriado com outro subdominio.

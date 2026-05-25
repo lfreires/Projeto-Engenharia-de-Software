@@ -11,8 +11,9 @@ e chama o Web Service FastAPI pela URL publica configurada no build.
 | `VITE_PROJECT_ID` | Projeto aberto por padrao; deploy usa `proj-demo` |
 | `VITE_BEARER_TOKEN` | Token demonstrativo; deploy usa `dev-token` |
 
-No Render, defina `VITE_API_BASE_URL=https://<api>.onrender.com` e reconstrua
-o Static Site. O backend permite origens Static Site `*.onrender.com` via CORS.
+No Blueprint atual, `VITE_API_BASE_URL=https://docai-v8qm.onrender.com` conecta
+automaticamente o Static Site ao backend existente. O backend permite origens
+Static Site `*.onrender.com` via CORS.
 
 ## Desenvolvimento
 

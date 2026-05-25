@@ -41,19 +41,12 @@ atual, que desabilita prepared statements do cliente.
 | `GROQ_API_KEY` | Chave Groq rotacionada |
 | `GEMINI_API_KEY` | Chave Google/Gemini rotacionada |
 
-3. Aguarde o Render expor a URL publica do backend, por exemplo
-   `https://<api>.onrender.com`.
-4. No Static Site `docai-frontend`, configure:
+3. Sincronize a Blueprint; o Static Site ja recebe
+   `VITE_API_BASE_URL=https://docai-v8qm.onrender.com`, URL publica do backend
+   existente.
 
-| Variavel | Valor |
-| --- | --- |
-| `VITE_API_BASE_URL` | URL publica do backend, sem barra final |
-
-5. Dispare novo deploy do frontend apos definir `VITE_API_BASE_URL`.
-
-O Render Blueprint nao oferece a URL publica de outro web service como
-referencia de build para Static Sites; por isso esse valor precisa ser
-informado uma vez. As demais variaveis demonstrativas estao no Blueprint.
+Se o backend for recriado e ganhar outro subdominio Render, atualize
+`VITE_API_BASE_URL` em `render.yaml` e sincronize/deploye novamente o frontend.
 
 ## Inicializacao E Verificacao
 
