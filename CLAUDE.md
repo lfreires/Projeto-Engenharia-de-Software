@@ -77,6 +77,9 @@ up to 10 MB through `POST /api/v1/ingestion/uploads`. Each upload creates one
 material, extracts readable text through LangChain loaders, splits it with
 LangChain splitters and indexes it through `langchain-postgres` PGVector. The
 application persists extracted text for the reader, not the original binary.
+The SPA bundles `frontend/documents/arquitetura-original.md`, restored from
+the former demo seed, and provides an explicit action to index it on demand.
+It is not indexed during startup.
 
 Markdown headings and PDF page metadata are retained in retrieval metadata.
 Chat citations expose the document name rather than internal chunk IDs.

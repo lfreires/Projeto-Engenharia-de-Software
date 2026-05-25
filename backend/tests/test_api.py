@@ -135,6 +135,28 @@ async def test_markdown_upload_creates_material_content_and_searchable_chunks(ru
 
 
 @pytest.mark.asyncio
+async def test_bundled_original_architecture_document_can_be_indexed(runtime):
+    client, _, _ = runtime
+    architecture = (
+        Path(__file__).parents[2] / "frontend" / "documents" / "arquitetura-original.md"
+    ).read_bytes()
+    uploaded = await client.post(
+        "/api/v1/ingestion/uploads",
+        data={"project_id": "proj-demo"},
+        files={"file": ("arquitetura-original.md", architecture, "text/markdown")},
+        headers=AUTH,
+    )
+    results = await client.post(
+        "/api/v1/ingestion/search",
+        json={"project_id": "proj-demo", "query": "Azure API Management", "top_k": 5},
+        headers=AUTH,
+    )
+    assert uploaded.status_code == 201
+    assert uploaded.json()["status"] == "indexed"
+    assert results.json()["chunks"][0]["file_name"] == "arquitetura-original.md"
+
+
+@pytest.mark.asyncio
 async def test_delete_material_removes_content_and_retrieval_chunks(runtime):
     client, _, _ = runtime
     uploaded = (await upload_text(client)).json()

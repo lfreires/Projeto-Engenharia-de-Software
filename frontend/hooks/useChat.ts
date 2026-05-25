@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { FeedbackRating, Message } from "@/models/message";
-import { sendMessage, clearSession, sendFeedback } from "@/services/chatService";
+import { ChatServiceError, sendMessage, clearSession, sendFeedback } from "@/services/chatService";
 import { PROJECT_ID } from "@/services/projectService";
 
 // ─── Session management ───────────────────────────────────────────────────────
@@ -88,7 +88,9 @@ export function useChat(): UseChatReturn {
           setMessages((prev) => [...prev, aiMsg]);
         })
         .catch((err: Error) => {
-          setConnectionError(err.message);
+          setConnectionError(
+            err instanceof ChatServiceError && err.isConnectionFailure ? err.message : null
+          );
           const errMsg: Message = {
             id: `error-${Date.now()}`,
             role: "ai",

@@ -23,6 +23,13 @@ interface BackendChatResponse {
   latency_ms: number;
 }
 
+export class ChatServiceError extends Error {
+  constructor(message: string, public readonly isConnectionFailure: boolean) {
+    super(message);
+    this.name = "ChatServiceError";
+  }
+}
+
 function inferMaterialType(filename: string): MaterialType {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf") return "pdf";
@@ -78,11 +85,11 @@ export async function sendMessage(
       body: JSON.stringify({ project_id: projectId, session_id: sessionId, message, top_k: 5 }),
     });
   } catch {
-    throw new Error("Nao foi possivel conectar ao backend.");
+    throw new ChatServiceError("Nao foi possivel conectar ao backend.", true);
   }
 
   if (!resp.ok) {
-    throw new Error(errorMessage(resp.status));
+    throw new ChatServiceError(errorMessage(resp.status), false);
   }
 
   const data: BackendChatResponse = await resp.json();

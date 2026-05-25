@@ -1,5 +1,6 @@
 import React from "react";
 import { AlertCircle, FileUp, LoaderCircle } from "lucide-react";
+import architectureDocument from "@/documents/arquitetura-original.md?raw";
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
@@ -32,16 +33,29 @@ export function MaterialUpload({ onUpload }: MaterialUploadProps) {
     setError(null);
   }
 
-  async function submit() {
-    if (!file || submitting) return;
+  async function upload(candidate: File) {
+    if (submitting) return;
     setSubmitting(true);
     setError(null);
     try {
-      await onUpload(file);
+      await onUpload(candidate);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Falha ao indexar documento.");
       setSubmitting(false);
     }
+  }
+
+  async function submit() {
+    if (!file) return;
+    await upload(file);
+  }
+
+  async function submitArchitectureDocument() {
+    const document = new File([architectureDocument], "arquitetura-original.md", {
+      type: "text/markdown",
+    });
+    setFile(null);
+    await upload(document);
   }
 
   return (
@@ -85,6 +99,25 @@ export function MaterialUpload({ onUpload }: MaterialUploadProps) {
           onChange={(event) => choose(event.target.files?.[0])}
         />
       </div>
+
+      <button
+        type="button"
+        disabled={submitting}
+        onClick={submitArchitectureDocument}
+        className="w-full mt-2"
+        style={{
+          backgroundColor: "#eef2ff",
+          border: "0.5px solid #c7d2fe",
+          borderRadius: "6px",
+          color: "#4338ca",
+          cursor: submitting ? "wait" : "pointer",
+          fontSize: "11px",
+          fontWeight: 500,
+          padding: "6px 8px",
+        }}
+      >
+        {submitting ? "Indexando..." : "Indexar arquitetura original do DocAI"}
+      </button>
 
       {file && (
         <div className="flex items-center gap-2 mt-2">
