@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.types import ASGIApp
 
 from app.clients import DeterministicEmbeddingClient, GeminiEmbeddingClient, GroqChatClient
 from app.config import Settings, settings
@@ -52,7 +53,7 @@ def build_services(configuration: Settings) -> Services:
 def create_app(
     configuration: Settings | None = None,
     injected_services: Services | None = None,
-) -> FastAPI:
+) -> ASGIApp:
     configuration = configuration or settings
     services = injected_services or build_services(configuration)
 
@@ -72,16 +73,6 @@ def create_app(
         lifespan=lifespan,
     )
     application.state.services = services
-    application.add_middleware(
-        CORSMiddleware,
-        allow_origins=[
-            origin.strip() for origin in configuration.cors_origins.split(",") if origin.strip()
-        ],
-        allow_origin_regex=configuration.cors_origin_regex or None,
-        allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
     application.include_router(identity_router)
     application.include_router(projects_router)
     application.include_router(ingestion_router)
@@ -91,7 +82,16 @@ def create_app(
     async def health():
         return {"status": "ok", "service": "docai"}
 
-    return application
+    return CORSMiddleware(
+        app=application,
+        allow_origins=[
+            origin.strip() for origin in configuration.cors_origins.split(",") if origin.strip()
+        ],
+        allow_origin_regex=configuration.cors_origin_regex or None,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 app = create_app()

@@ -19,6 +19,13 @@ class FakeChatClient:
         return "O DocAI armazena vetores no Supabase.", "fake-groq-model"
 
 
+class FailingAppendStore(MemoryStore):
+    def append_turns(
+        self, project_id: str, session_id: str, user_message: str, assistant_answer: str
+    ) -> None:
+        raise RuntimeError("database write failed")
+
+
 @pytest.fixture
 async def runtime(tmp_path):
     settings = Settings(
@@ -180,6 +187,41 @@ async def test_cors_allows_render_static_site_origin(runtime):
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == (
         "https://docai-frontend.onrender.com"
+    )
+
+
+@pytest.mark.asyncio
+async def test_cors_is_preserved_on_unhandled_backend_error():
+    settings = Settings(seed_demo_data=False, embedding_dimensions=768)
+    store = FailingAppendStore()
+    services = Services(
+        settings=settings,
+        store=store,
+        embedding_client=DeterministicEmbeddingClient(768),
+        chat_client=FakeChatClient(),
+    )
+    await services.seed()
+    app = create_app(settings, services)
+    async with AsyncClient(
+        transport=ASGITransport(app=app, raise_app_exceptions=False),
+        base_url="http://test",
+    ) as client:
+        response = await client.post(
+            "/api/v1/query/chat",
+            headers={
+                **AUTH,
+                "Origin": "https://docai-frontend-7wym.onrender.com",
+            },
+            json={
+                "project_id": "proj-demo",
+                "session_id": "sess-error",
+                "message": "Supabase vetores",
+            },
+        )
+
+    assert response.status_code == 500
+    assert response.headers["access-control-allow-origin"] == (
+        "https://docai-frontend-7wym.onrender.com"
     )
 
 

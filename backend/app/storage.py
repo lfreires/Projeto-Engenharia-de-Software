@@ -335,13 +335,14 @@ class PostgresStore:
                 "ON CONFLICT (id) DO NOTHING",
                 (session_id, project_id),
             )
-            connection.executemany(
-                "INSERT INTO messages (session_id, role, content) VALUES (%s, %s, %s)",
-                [
-                    (session_id, "user", user_message),
-                    (session_id, "assistant", assistant_answer),
-                ],
-            )
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    "INSERT INTO messages (session_id, role, content) VALUES (%s, %s, %s)",
+                    [
+                        (session_id, "user", user_message),
+                        (session_id, "assistant", assistant_answer),
+                    ],
+                )
             connection.commit()
 
     def delete_history(self, session_id: str) -> None:
