@@ -108,7 +108,10 @@ export function ProjectMaterialsPanel({
         />
       ) : (
         <>
-      <MaterialUpload onUpload={onUpload} />
+      <MaterialUpload
+        onUpload={onUpload}
+        showArchitectureOption={!materials.some((material) => material.filename === "arquitetura-original.md")}
+      />
       {/* Search */}
       <div className="px-4 py-3" style={{ borderBottom: "0.5px solid #f0f1f8" }}>
         <div

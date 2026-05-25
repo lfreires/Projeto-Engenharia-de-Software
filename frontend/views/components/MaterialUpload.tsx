@@ -7,9 +7,10 @@ const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
 
 interface MaterialUploadProps {
   onUpload: (file: File) => Promise<void>;
+  showArchitectureOption: boolean;
 }
 
-export function MaterialUpload({ onUpload }: MaterialUploadProps) {
+export function MaterialUpload({ onUpload, showArchitectureOption }: MaterialUploadProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [file, setFile] = React.useState<File | null>(null);
   const [dragging, setDragging] = React.useState(false);
@@ -100,24 +101,26 @@ export function MaterialUpload({ onUpload }: MaterialUploadProps) {
         />
       </div>
 
-      <button
-        type="button"
-        disabled={submitting}
-        onClick={submitArchitectureDocument}
-        className="w-full mt-2"
-        style={{
-          backgroundColor: "#eef2ff",
-          border: "0.5px solid #c7d2fe",
-          borderRadius: "6px",
-          color: "#4338ca",
-          cursor: submitting ? "wait" : "pointer",
-          fontSize: "11px",
-          fontWeight: 500,
-          padding: "6px 8px",
-        }}
-      >
-        {submitting ? "Indexando..." : "Indexar arquitetura original do DocAI"}
-      </button>
+      {showArchitectureOption && (
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={submitArchitectureDocument}
+          className="w-full mt-2"
+          style={{
+            backgroundColor: "#eef2ff",
+            border: "0.5px solid #c7d2fe",
+            borderRadius: "6px",
+            color: "#4338ca",
+            cursor: submitting ? "wait" : "pointer",
+            fontSize: "11px",
+            fontWeight: 500,
+            padding: "6px 8px",
+          }}
+        >
+          {submitting ? "Indexando..." : "Indexar arquitetura original do DocAI"}
+        </button>
+      )}
 
       {file && (
         <div className="flex items-center gap-2 mt-2">

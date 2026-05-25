@@ -21,6 +21,6 @@ seja recriado com outro subdominio.
 O projeto abre sem material artificial. Para validar a publicacao, abra
 **Materiais**, envie um arquivo `PDF`, `DOCX`, `TXT` ou `MD` (ate 10 MB) e
 confirme que o texto extraido aparece antes de consultar o chat.
-Para demonstrar a arquitetura originalmente planejada, clique em **Indexar
-arquitetura original do DocAI**; o arquivo incluido na SPA percorre o mesmo
+Se o material ainda nao estiver listado, clique em **Indexar arquitetura
+original do DocAI**; o arquivo incluido na SPA percorre o mesmo
 pipeline de upload e so passa a existir no indice apos essa acao.

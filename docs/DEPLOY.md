@@ -86,9 +86,9 @@ GET https://<api>.onrender.com/api/v1/projects/proj-demo
 Em seguida acesse o Static Site, abra **Materiais**, envie um arquivo `PDF`,
 `DOCX`, `TXT` ou `MD` de ate 10 MB e abra o texto extraido. Uma pergunta
 baseada nesse arquivo deve responder citando somente o nome do documento.
-Use **Indexar arquitetura original do DocAI** para carregar, sob demanda, o
-Markdown da arquitetura Azure originalmente planejada; ele nao volta a ser
-semeado automaticamente.
+Quando ele ainda nao estiver listado, use **Indexar arquitetura original do
+DocAI** para carregar, sob demanda, o Markdown da arquitetura Azure
+originalmente planejada; ele nao volta a ser semeado automaticamente.
 Exclua o material pelo painel e confirme que ele desaparece da lista e nao e
 mais retornado nas respostas do chat.
 
