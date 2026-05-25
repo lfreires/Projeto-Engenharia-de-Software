@@ -1,5 +1,6 @@
 import { MaterialType, Project, ProjectMaterial } from "@/models/project";
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 const BEARER_TOKEN = import.meta.env.VITE_BEARER_TOKEN ?? "dev-token";
 
 export const PROJECT_ID: string = import.meta.env.VITE_PROJECT_ID ?? "proj-demo";
@@ -32,7 +33,7 @@ async function fetchJson<T>(path: string): Promise<T> {
   let response: Response;
 
   try {
-    response = await fetch(path, {
+    response = await fetch(`${API_BASE_URL}${path}`, {
       headers: { Authorization: `Bearer ${BEARER_TOKEN}` },
     });
   } catch {

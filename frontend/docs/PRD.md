@@ -6,7 +6,7 @@ Provide the DocAI chat interface and project material browsing experience.
 
 ## API Contract
 
-The browser uses same-origin endpoints exposed by the consolidated backend:
+The browser calls the consolidated backend configured by `VITE_API_BASE_URL`:
 
 - `GET /api/v1/projects/{id}`
 - `GET /api/v1/projects/{id}/materials`

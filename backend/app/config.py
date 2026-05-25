@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,7 +6,8 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     database_url: str = ""
-    frontend_dist: Path = Path("/app/frontend-dist")
+    cors_origins: str = ""
+    cors_origin_regex: str = r"https://[-a-z0-9]+\.onrender\.com"
 
     bearer_token: str = "dev-token"
     internal_service_token: str = "internal-query-token"

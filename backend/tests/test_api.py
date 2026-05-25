@@ -23,7 +23,6 @@ class FakeChatClient:
 async def runtime(tmp_path):
     settings = Settings(
         seed_demo_data=False,
-        frontend_dist=tmp_path,
         embedding_dimensions=768,
     )
     store = MemoryStore()
@@ -154,6 +153,34 @@ def test_production_requires_external_secrets():
         build_services(
             Settings(app_env="production", database_url="", groq_api_key="", gemini_api_key="")
         )
+
+
+def test_production_rejects_supabase_direct_ipv6_database_url():
+    with pytest.raises(RuntimeError, match="Session Pooler"):
+        build_services(
+            Settings(
+                app_env="production",
+                database_url="postgresql://postgres:secret@db.project.supabase.co:5432/postgres",
+                groq_api_key="groq-secret",
+                gemini_api_key="gemini-secret",
+            )
+        )
+
+
+@pytest.mark.asyncio
+async def test_cors_allows_render_static_site_origin(runtime):
+    client, _ = runtime
+    response = await client.options(
+        "/api/v1/projects/proj-demo",
+        headers={
+            "Origin": "https://docai-frontend.onrender.com",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == (
+        "https://docai-frontend.onrender.com"
+    )
 
 
 def test_migration_defines_vector_and_persistent_domains():

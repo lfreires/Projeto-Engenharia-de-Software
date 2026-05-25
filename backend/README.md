@@ -1,8 +1,8 @@
 # DocAI Backend
 
 FastAPI runtime consolidado para o deploy Render. Ele preserva os quatro
-prefixos de API do projeto original, serve o build do frontend e usa Supabase
-Postgres com `pgvector` em producao.
+prefixos de API do projeto original, atende o Static Site frontend por CORS e
+usa Supabase Postgres com `pgvector` em producao.
 
 ## Estrutura
 
@@ -23,5 +23,6 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 O modo local sem `DATABASE_URL` semeia memoria e gera vetores
-deterministicamente. Configure as variaveis de `.env.example` para usar as
-integracoes externas.
+deterministicamente. Em producao, use a connection string **Session pooler**
+do Supabase: a conexao direta `db.<ref>.supabase.co` depende de IPv6 e nao e
+acessivel pelo Render.

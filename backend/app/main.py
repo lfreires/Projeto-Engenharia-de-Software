@@ -1,9 +1,10 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.clients import DeterministicEmbeddingClient, GeminiEmbeddingClient, GroqChatClient
 from app.config import Settings, settings
@@ -28,6 +29,12 @@ def build_services(configuration: Settings) -> Services:
         ]
         if missing:
             raise RuntimeError(f"Production requires environment values: {', '.join(missing)}.")
+        database_host = (urlparse(configuration.database_url).hostname or "").lower()
+        if database_host.startswith("db.") and database_host.endswith(".supabase.co"):
+            raise RuntimeError(
+                "DATABASE_URL uses the Supabase direct IPv6 endpoint. "
+                "Render requires the Supabase Session Pooler or Transaction Pooler URL."
+            )
     store = PostgresStore(configuration) if configuration.database_url else MemoryStore()
     embedding_client = (
         GeminiEmbeddingClient(configuration)
@@ -60,11 +67,21 @@ def create_app(
 
     application = FastAPI(
         title="DocAI",
-        description="DocAI monorepo API and frontend runtime for Render.",
+        description="DocAI consolidated API runtime for Render.",
         version="2.0.0",
         lifespan=lifespan,
     )
     application.state.services = services
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            origin.strip() for origin in configuration.cors_origins.split(",") if origin.strip()
+        ],
+        allow_origin_regex=configuration.cors_origin_regex or None,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     application.include_router(identity_router)
     application.include_router(projects_router)
     application.include_router(ingestion_router)
@@ -73,19 +90,6 @@ def create_app(
     @application.get("/health")
     async def health():
         return {"status": "ok", "service": "docai"}
-
-    @application.get("/{resource_path:path}", include_in_schema=False)
-    async def frontend(resource_path: str):
-        if resource_path.startswith("api/"):
-            raise HTTPException(status_code=404, detail="Not found")
-        dist = configuration.frontend_dist.resolve()
-        requested = (dist / resource_path).resolve()
-        if resource_path and dist in requested.parents and requested.is_file():
-            return FileResponse(requested)
-        index = dist / "index.html"
-        if index.is_file():
-            return FileResponse(index)
-        raise HTTPException(status_code=404, detail="Frontend build not found.")
 
     return application
 

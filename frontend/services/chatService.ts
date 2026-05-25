@@ -2,7 +2,8 @@ import { AIResponsePayload } from "@/models/chat";
 import { CitationSource } from "@/models/citation";
 import { MaterialType } from "@/models/project";
 
-const API_BASE = "/api/v1/query";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+const API_BASE = `${API_BASE_URL}/api/v1/query`;
 const BEARER_TOKEN = import.meta.env.VITE_BEARER_TOKEN ?? "dev-token";
 
 interface BackendSource {

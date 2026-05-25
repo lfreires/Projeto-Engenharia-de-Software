@@ -1,74 +1,90 @@
 # Deploy no Render com Supabase
 
 O DocAI e publicado por uma Blueprint Render a partir da branch
-`render-deploy`. A Blueprint cria um unico web service Docker gratuito que
-serve a SPA e a API FastAPI no mesmo dominio.
+`render-deploy`. A Blueprint cria dois recursos gratuitos:
 
-## Dependencias Externas
+- `docai`: Web Service Docker que executa a API FastAPI.
+- `docai-frontend`: Static Site Vite que chama a API publica.
 
-Antes de criar a Blueprint:
+## Rotacionar Segredos Expostos
 
-1. Crie um projeto gratuito no Supabase.
-2. Copie uma connection string PostgreSQL compativel com aplicacoes externas,
-   preferencialmente a string do Supavisor para ambientes IPv4.
-3. Crie uma chave Groq para resposta da LLM.
-4. Crie uma chave Gemini API para embeddings.
+Nunca registre chaves Groq, Google ou a senha Postgres no repositorio. Caso
+tenham sido compartilhadas em logs ou conversas, revogue/rotacione as chaves e
+redefina a senha do banco antes do novo deploy.
 
-O Render nao cria o projeto Supabase nem essas chaves.
+## Corrigir A Conexao Supabase
 
-## Criar A Blueprint
+O host direto `db.<project-ref>.supabase.co:5432` usa IPv6. O Render nao
+consegue alcancar esse endpoint, resultando em `Network is unreachable` no
+startup da API.
 
-1. Envie a branch `render-deploy` para o GitHub.
-2. No Render Dashboard, selecione `New > Blueprint`.
-3. Conecte este repositorio e selecione o arquivo `render.yaml`.
-4. Preencha os segredos solicitados:
+No dashboard Supabase:
+
+1. Abra `Connect`.
+2. Selecione **Session pooler** (recomendado para este backend).
+3. Copie a URI com host semelhante a `aws-0-<regiao>.pooler.supabase.com` e
+   porta `5432`.
+4. Grave essa URI no segredo `DATABASE_URL` do servico `docai`.
+
+O **Transaction pooler** em porta `6543` tambem e compativel com o codigo
+atual, que desabilita prepared statements do cliente.
+
+## Criar Ou Sincronizar A Blueprint
+
+1. No Render Dashboard, crie ou sincronize a Blueprint usando `render.yaml`
+   da branch `render-deploy`.
+2. No servico backend `docai`, configure:
 
 | Variavel | Valor |
 | --- | --- |
-| `DATABASE_URL` | Connection string do Supabase Postgres/Supavisor |
-| `GROQ_API_KEY` | Chave da API Groq |
-| `GEMINI_API_KEY` | Chave da Gemini API |
+| `DATABASE_URL` | URI **Session pooler** Supabase/Supavisor |
+| `GROQ_API_KEY` | Chave Groq rotacionada |
+| `GEMINI_API_KEY` | Chave Google/Gemini rotacionada |
 
-5. Confirme a criacao do Blueprint.
+3. Aguarde o Render expor a URL publica do backend, por exemplo
+   `https://<api>.onrender.com`.
+4. No Static Site `docai-frontend`, configure:
 
-O primeiro startup cria a extensao `pgvector`, aplica as tabelas e indexa o
-documento demonstrativo. O site fica pronto para consultar `proj-demo` com o
-token demonstrativo ja incorporado ao frontend.
+| Variavel | Valor |
+| --- | --- |
+| `VITE_API_BASE_URL` | URL publica do backend, sem barra final |
 
-## Recursos Criados
+5. Dispare novo deploy do frontend apos definir `VITE_API_BASE_URL`.
+
+O Render Blueprint nao oferece a URL publica de outro web service como
+referencia de build para Static Sites; por isso esse valor precisa ser
+informado uma vez. As demais variaveis demonstrativas estao no Blueprint.
+
+## Inicializacao E Verificacao
+
+No primeiro startup bem sucedido, o backend habilita `pgvector`, aplica as
+migrations e indexa idempotentemente o documento demonstrativo de `proj-demo`.
+O backend aceita origens `*.onrender.com` para o frontend publicado.
+
+Verifique a API:
+
+```text
+GET https://<api>.onrender.com/health
+GET https://<api>.onrender.com/api/v1/projects/proj-demo
+```
+
+Em seguida acesse o Static Site; ele deve listar `architecture.md` e responder
+uma pergunta sobre Render ou Supabase citando o documento seed.
+
+## Recursos E Limites
 
 | Provedor | Recurso | Uso |
 | --- | --- | --- |
-| Render | Web Service Docker Free | SPA e API no mesmo hostname |
-| Supabase | Postgres Free + `pgvector` | Dados e vetores persistentes |
-| Gemini | `gemini-embedding-001` | Embeddings de documentos e buscas |
+| Render | Web Service Docker Free | API FastAPI |
+| Render | Static Site Free | SPA Vite |
+| Supabase | Postgres Free + `pgvector` | Dados e vetores |
+| Gemini | `gemini-embedding-001` | Embeddings |
 | Groq | Chat completions | Respostas RAG |
 
-Nao ha API gateway, Terraform, workflows GitHub Actions ou banco Render nesta
-arquitetura. O Render monitora `GET /health` e faz auto-deploy dos commits na
-branch configurada.
-
-## Verificacao Pos-Deploy
-
-Verifique:
-
-```text
-GET /health
-GET /api/v1/projects/proj-demo
-GET /api/v1/projects/proj-demo/materials
-POST /api/v1/query/chat
-```
-
-O frontend deve carregar o material `architecture.md` e responder perguntas
-sobre Render, Supabase, Gemini ou Groq citando o documento seed.
-
-## Limites Do Nivel Gratuito
-
-- O web service gratuito do Render pode dormir por inatividade e apresentar
-  cold start.
+- O web service gratuito pode dormir por inatividade e apresentar cold start.
 - O projeto Supabase gratuito pode pausar apos periodo sem atividade.
-- Gemini e Groq estao sujeitos a suas cotas gratuitas.
-- O token `dev-token` e adequado apenas para demonstracao publica do MVP.
+- Gemini e Groq estao sujeitos as cotas dos seus planos.
+- `dev-token` e autenticacao demonstrativa, nao autenticacao de producao.
 
 ## Desenvolvimento Local
 
@@ -82,13 +98,12 @@ npm ci
 npm run dev
 ```
 
-Sem `DATABASE_URL`, o backend local utiliza memoria e embeddings
-deterministicos. Para validar a integracao real, configure `DATABASE_URL`,
-`GEMINI_API_KEY` e `GROQ_API_KEY` em `backend/.env`.
+Sem `DATABASE_URL`, o backend usa memoria e embeddings deterministicos. Deixe
+`VITE_API_BASE_URL` vazio localmente para usar o proxy Vite.
 
 ## Referencias
 
 - Render Blueprints: <https://render.com/docs/blueprint-spec>
-- Render Free Web Services: <https://render.com/free>
+- Supabase connections: <https://supabase.com/docs/guides/database/connecting-to-postgres>
 - Supabase pgvector: <https://supabase.com/docs/guides/database/extensions/pgvector>
 - Gemini Embeddings: <https://ai.google.dev/gemini-api/docs/embeddings>
