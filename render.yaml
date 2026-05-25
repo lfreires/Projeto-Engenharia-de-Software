@@ -3,6 +3,7 @@ services:
     name: docai
     runtime: docker
     plan: free
+    repo: https://github.com/lfreires/Projeto-Engenharia-de-Software.git
     branch: render-deploy
     rootDir: backend
     dockerfilePath: ./Dockerfile
@@ -33,6 +34,7 @@ services:
   - type: web
     name: docai-frontend
     runtime: static
+    repo: https://github.com/lfreires/Projeto-Engenharia-de-Software.git
     branch: render-deploy
     rootDir: frontend
     buildCommand: npm ci && npm run build

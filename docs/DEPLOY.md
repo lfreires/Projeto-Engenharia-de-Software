@@ -6,6 +6,11 @@ O DocAI e publicado por uma Blueprint Render a partir da branch
 - `docai`: Web Service Docker que executa a API FastAPI.
 - `docai-frontend`: Static Site Vite que chama a API publica.
 
+Ambos os recursos declaram explicitamente o repositorio
+`lfreires/Projeto-Engenharia-de-Software`. Isso permite adotar o Static Site
+existente `docai-frontend` sem trocar seu subdominio, mas substituindo uma
+origem legada que ainda compilava o repositorio `GabrielNichols/DocAI-frontend`.
+
 ## Rotacionar Segredos Expostos
 
 Nunca registre chaves Groq, Google ou a senha Postgres no repositorio. Caso
@@ -47,6 +52,21 @@ atual, que desabilita prepared statements do cliente.
 
 Se o backend for recriado e ganhar outro subdominio Render, atualize
 `VITE_API_BASE_URL` em `render.yaml` e sincronize/deploye novamente o frontend.
+
+Se o Static Site continuar mostrando em `Settings > Build > Source` o
+repositorio antigo apos o sync, edite a origem do servico existente no
+Dashboard para:
+
+```text
+Repository: https://github.com/lfreires/Projeto-Engenharia-de-Software
+Branch: render-deploy
+Root Directory: frontend
+Build Command: npm ci && npm run build
+Publish Directory: ./dist
+```
+
+Essa operacao preserva `https://docai-frontend-7wym.onrender.com`, pois altera
+a origem do servico existente, nao cria outro Static Site.
 
 ## Inicializacao E Verificacao
 
