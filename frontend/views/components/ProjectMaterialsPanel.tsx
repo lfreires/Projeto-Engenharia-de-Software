@@ -3,12 +3,14 @@ import { X, FolderOpen, Search } from "lucide-react";
 import { ProjectMaterial } from "@/models/project";
 import { MaterialCard } from "./MaterialCard";
 import { MaterialViewer } from "./MaterialViewer";
+import { MaterialUpload } from "./MaterialUpload";
 
 interface ProjectMaterialsPanelProps {
   materials: ProjectMaterial[];
   selectedMaterial: ProjectMaterial | null;
   onSelectMaterial: (material: ProjectMaterial) => void;
   onClearSelection: () => void;
+  onUpload: (file: File) => Promise<void>;
   onClose: () => void;
 }
 
@@ -17,6 +19,7 @@ export function ProjectMaterialsPanel({
   selectedMaterial,
   onSelectMaterial,
   onClearSelection,
+  onUpload,
   onClose,
 }: ProjectMaterialsPanelProps) {
   const [filter, setFilter] = React.useState("");
@@ -70,6 +73,7 @@ export function ProjectMaterialsPanel({
         <MaterialViewer material={selectedMaterial} onBack={onClearSelection} />
       ) : (
         <>
+      <MaterialUpload onUpload={onUpload} />
       {/* Search */}
       <div className="px-4 py-3" style={{ borderBottom: "0.5px solid #f0f1f8" }}>
         <div
@@ -108,7 +112,9 @@ export function ProjectMaterialsPanel({
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <FolderOpen size={28} style={{ color: "#d0d4e8", marginBottom: "8px" }} />
-            <p style={{ fontSize: "12px", color: "#a0a4b8" }}>Nenhum material encontrado</p>
+            <p style={{ fontSize: "12px", color: "#a0a4b8" }}>
+              Envie um documento para comecar
+            </p>
           </div>
         ) : (
           filtered.map((m) => (

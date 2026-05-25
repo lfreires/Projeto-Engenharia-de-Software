@@ -4,6 +4,8 @@ import { ProjectMaterial, MaterialType } from "@/models/project";
 
 const TYPE_CONFIG: Record<MaterialType, { label: string; color: string; bg: string; border: string; Icon: React.ElementType }> = {
   pdf:        { label: "PDF",       color: "#dc2626", bg: "#fef2f2", border: "#fecaca", Icon: FileText },
+  document:   { label: "DOCX",      color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", Icon: FileText },
+  text:       { label: "Texto",     color: "#475569", bg: "#f8fafc", border: "#e2e8f0", Icon: FileText },
   spreadsheet:{ label: "Planilha",  color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", Icon: FileSpreadsheet },
   markdown:   { label: "Markdown",  color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", Icon: FileText },
   sql:        { label: "SQL",       color: "#d97706", bg: "#fffbeb", border: "#fde68a", Icon: Database },

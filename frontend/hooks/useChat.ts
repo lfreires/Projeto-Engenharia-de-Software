@@ -22,7 +22,7 @@ function buildWelcomeMessage(): Message {
     id: "ai-welcome",
     role: "ai",
     content:
-      "Ola! Sou o **DocAI**, seu assistente de documentacao. Posso responder perguntas com base nos documentos indexados do projeto conectado.",
+      "Ola! Sou o **DocAI**, seu assistente de documentacao. Envie um arquivo em **Materiais** e eu responderei com base no texto indexado.",
     timestamp: new Date(),
   };
 }

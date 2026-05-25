@@ -13,9 +13,9 @@ PostgreSQL project with `pgvector`.
 | --- | --- | --- |
 | Frontend | `frontend/` | Render Static Site for chat and materials UI |
 | Backend | `backend/app/` | Consolidated FastAPI API Docker service |
-| Database | Supabase Postgres | Domain records, chat records and vector chunks |
-| Embeddings | Gemini API | `gemini-embedding-001`, 768-dimensional vectors |
-| Answer model | Groq API | RAG response generation |
+| Database | Supabase Postgres | Domain/chat records and LangChain PGVector collection |
+| Embeddings | Gemini API | `gemini-embedding-2`, 768-dimensional vectors |
+| Answer model | Groq API | LangChain RAG response generation |
 | Deploy | `render.yaml` | One Render web service plus one Static Site |
 
 Public API prefixes remain compatible with the former service split:
@@ -28,16 +28,18 @@ Public API prefixes remain compatible with the former service split:
 
 ## Persistence
 
-`backend/migrations/001_initial.sql` owns the database schema. At application
-startup in production, the backend applies unapplied migrations and performs
-an idempotent demo seed. The seed creates `proj-demo`, token `dev-token`, one
-material and an indexed architecture document.
+`backend/migrations/` owns the domain schema. At application startup in
+production, the backend applies unapplied migrations and performs an
+idempotent demo seed. The seed creates `proj-demo`, identity and token
+`dev-token`; it does not create material or indexed content.
 
 Persistent domains:
 
 - Identity: `users`, `api_tokens`, `project_memberships`
 - Catalog: `projects`, `materials`, `material_versions`
-- RAG: `documents`, `document_chunks` with `extensions.vector(768)`
+- RAG catalog: `documents` with extracted content and indexing status
+- RAG vectors: LangChain Postgres collection
+  `docai_documents_gemini_embedding_2_768_v1`
 - Conversation: `chat_sessions`, `messages`, `feedback`
 
 ## Configuration
@@ -55,8 +57,9 @@ Blueprint defaults:
 - `INTERNAL_SERVICE_TOKEN=internal-query-token`
 - `PRIMARY_LLM_MODEL=llama-3.3-70b-versatile`
 - `FALLBACK_LLM_MODEL=llama-3.1-8b-instant`
-- `EMBEDDING_MODEL=gemini-embedding-001`
+- `EMBEDDING_MODEL=gemini-embedding-2`
 - `EMBEDDING_DIMENSIONS=768`
+- `VECTOR_COLLECTION_NAME=docai_documents_gemini_embedding_2_768_v1`
 
 The browser token is demonstrative and is not production authentication.
 Use a Supabase Session Pooler or Transaction Pooler `DATABASE_URL`: Render
@@ -66,6 +69,17 @@ The frontend build receives `VITE_API_BASE_URL=https://docai-v8qm.onrender.com`
 from the Blueprint, matching the currently provisioned backend URL. The API
 permits Render static-site origins through CORS for this demonstration
 deployment.
+
+## Document Ingestion
+
+The frontend Materials panel uploads `PDF`, `DOCX`, `TXT` and `MD` documents
+up to 10 MB through `POST /api/v1/ingestion/uploads`. Each upload creates one
+material, extracts readable text through LangChain loaders, splits it with
+LangChain splitters and indexes it through `langchain-postgres` PGVector. The
+application persists extracted text for the reader, not the original binary.
+
+Markdown headings and PDF page metadata are retained in retrieval metadata.
+Chat citations expose the document name rather than internal chunk IDs.
 
 ## Development Commands
 

@@ -1,69 +1,69 @@
-import httpx
 import pytest
+from langchain_core.documents import Document
 
-from app.clients import GeminiEmbeddingClient, GroqChatClient
+import app.rag as rag
+from app.clients import GroqChatClient
 from app.config import Settings
+from app.schemas import SearchChunk
 
 
-class StubAsyncClient:
-    requests = []
-    responses = []
+def test_gemini_embedding_adapter_prefixes_documents_and_queries(monkeypatch):
+    class StubGemini:
+        def __init__(self, **kwargs):
+            assert kwargs["model"] == "gemini-embedding-2"
+            assert kwargs["output_dimensionality"] == 768
+            self.texts = []
 
-    def __init__(self, *args, **kwargs):
-        pass
+        def embed_documents(self, texts):
+            self.texts.extend(texts)
+            return [[0.1] * 768 for _ in texts]
 
-    async def __aenter__(self):
-        return self
+        def embed_query(self, text):
+            self.texts.append(text)
+            return [0.2] * 768
 
-    async def __aexit__(self, *args):
-        return None
-
-    async def post(self, url, **kwargs):
-        self.requests.append((url, kwargs))
-        return self.responses.pop(0)
-
-
-@pytest.mark.asyncio
-async def test_gemini_uses_retrieval_task_and_validates_dimensions(monkeypatch):
-    StubAsyncClient.requests = []
-    StubAsyncClient.responses = [
-        httpx.Response(
-            200,
-            request=httpx.Request("POST", "https://generativelanguage.googleapis.com"),
-            json={"embedding": {"values": [0.25, 0.75]}},
-        )
-    ]
-    monkeypatch.setattr(httpx, "AsyncClient", StubAsyncClient)
-    client = GeminiEmbeddingClient(
-        Settings(
-            gemini_api_key="secret",
-            embedding_dimensions=2,
-            embedding_model="gemini-embedding-001",
-        )
+    monkeypatch.setattr(rag, "GoogleGenerativeAIEmbeddings", StubGemini)
+    embeddings = rag.PrefixedGeminiEmbeddings(Settings(gemini_api_key="secret"))
+    embeddings.embed_document_chunks(
+        [Document(page_content="conteudo", metadata={"file_name": "design.pdf"})]
     )
-
-    vector = await client.embed_query("consulta")
-
-    assert vector == [0.25, 0.75]
-    assert StubAsyncClient.requests[0][1]["json"]["taskType"] == "RETRIEVAL_QUERY"
+    embeddings.embed_query("qual arquitetura?")
+    assert embeddings._delegate.texts[0] == "title: design.pdf | text: conteudo"
+    assert embeddings._delegate.texts[1] == "task: question answering | query: qual arquitetura?"
 
 
 @pytest.mark.asyncio
 async def test_groq_falls_back_after_rate_limit(monkeypatch):
-    request = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
-    StubAsyncClient.requests = []
-    StubAsyncClient.responses = [
-        httpx.Response(429, request=request),
-        httpx.Response(
-            200,
-            request=request,
-            json={"choices": [{"message": {"content": "fallback"}}]},
-        ),
-    ]
-    monkeypatch.setattr(httpx, "AsyncClient", StubAsyncClient)
     client = GroqChatClient(Settings(groq_api_key="secret"))
+    models = []
 
-    answer, model = await client.complete([{"role": "user", "content": "ola"}])
+    async def invoke(question, chunks, history, max_context_words, model):
+        del question, chunks, history, max_context_words
+        models.append(model)
+        if len(models) == 1:
+            error = RuntimeError("limit")
+            error.status_code = 429
+            raise error
+        return "fallback"
 
+    monkeypatch.setattr(client, "_invoke", invoke)
+    answer, model = await client.complete(
+        "ola",
+        [
+            SearchChunk(
+                document_id="doc",
+                project_id="proj",
+                material_id="mat",
+                file_name="readme.md",
+                location="readme.md",
+                chunk_index=0,
+                chunk_text="texto",
+                score=1,
+            )
+        ],
+        [],
+        100,
+    )
     assert answer == "fallback"
+    assert models == ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
     assert model == "llama-3.1-8b-instant"

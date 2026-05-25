@@ -7,12 +7,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp
 
-from app.clients import DeterministicEmbeddingClient, GeminiEmbeddingClient, GroqChatClient
+from app.clients import GroqChatClient
 from app.config import Settings, settings
 from app.modules.identity import router as identity_router
 from app.modules.ingestion import router as ingestion_router
 from app.modules.projects import router as projects_router
 from app.modules.query import router as query_router
+from app.rag import (
+    DeterministicEmbeddings,
+    LangChainPGVectorIndex,
+    MemoryVectorIndex,
+    PrefixedGeminiEmbeddings,
+)
 from app.services import Services
 from app.storage import MemoryStore, PostgresStore
 
@@ -37,15 +43,15 @@ def build_services(configuration: Settings) -> Services:
                 "Render requires the Supabase Session Pooler or Transaction Pooler URL."
             )
     store = PostgresStore(configuration) if configuration.database_url else MemoryStore()
-    embedding_client = (
-        GeminiEmbeddingClient(configuration)
-        if configuration.gemini_api_key
-        else DeterministicEmbeddingClient(configuration.embedding_dimensions)
+    vector_index = (
+        LangChainPGVectorIndex(configuration, PrefixedGeminiEmbeddings(configuration))
+        if configuration.database_url
+        else MemoryVectorIndex(DeterministicEmbeddings(configuration.embedding_dimensions))
     )
     return Services(
         settings=configuration,
         store=store,
-        embedding_client=embedding_client,
+        vector_index=vector_index,
         chat_client=GroqChatClient(configuration),
     )
 
@@ -62,6 +68,7 @@ def create_app(
         if isinstance(services.store, PostgresStore) and configuration.run_migrations:
             migrations = Path(__file__).resolve().parent.parent / "migrations"
             services.store.apply_migrations(migrations)
+        services.initialize()
         if configuration.seed_demo_data:
             await services.seed()
         yield

@@ -27,9 +27,11 @@ services:
       - key: FALLBACK_LLM_MODEL
         value: llama-3.1-8b-instant
       - key: EMBEDDING_MODEL
-        value: gemini-embedding-001
+        value: gemini-embedding-2
       - key: EMBEDDING_DIMENSIONS
         value: "768"
+      - key: VECTOR_COLLECTION_NAME
+        value: docai_documents_gemini_embedding_2_768_v1
 
   - type: web
     name: docai-frontend

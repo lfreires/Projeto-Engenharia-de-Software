@@ -1,4 +1,12 @@
-export type MaterialType = "pdf" | "spreadsheet" | "markdown" | "sql" | "yaml" | "diagram";
+export type MaterialType =
+  | "pdf"
+  | "document"
+  | "text"
+  | "spreadsheet"
+  | "markdown"
+  | "sql"
+  | "yaml"
+  | "diagram";
 
 export type ProjectStatus = "Em andamento" | "Concluído" | "Pausado";
 

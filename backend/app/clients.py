@@ -1,96 +1,83 @@
-import hashlib
-from collections.abc import Sequence
-
-import httpx
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_groq import ChatGroq
 
 from app.config import Settings
-
-
-class GeminiEmbeddingClient:
-    def __init__(self, settings: Settings) -> None:
-        self._settings = settings
-
-    async def embed_document(self, text: str) -> list[float]:
-        return await self._embed(text, "RETRIEVAL_DOCUMENT")
-
-    async def embed_query(self, text: str) -> list[float]:
-        return await self._embed(text, "RETRIEVAL_QUERY")
-
-    async def _embed(self, text: str, task_type: str) -> list[float]:
-        if not self._settings.gemini_api_key:
-            raise RuntimeError("GEMINI_API_KEY is required to generate embeddings.")
-        url = (
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self._settings.embedding_model}:embedContent"
-        )
-        payload = {
-            "model": f"models/{self._settings.embedding_model}",
-            "content": {"parts": [{"text": text}]},
-            "taskType": task_type,
-            "outputDimensionality": self._settings.embedding_dimensions,
-        }
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                url,
-                params={"key": self._settings.gemini_api_key},
-                json=payload,
-            )
-            response.raise_for_status()
-        values = response.json()["embedding"]["values"]
-        if len(values) != self._settings.embedding_dimensions:
-            raise RuntimeError("Gemini returned an unexpected embedding dimension.")
-        return [float(value) for value in values]
-
-
-class DeterministicEmbeddingClient:
-    """Small local fallback used only outside production and in tests."""
-
-    def __init__(self, dimensions: int) -> None:
-        self._dimensions = dimensions
-
-    async def embed_document(self, text: str) -> list[float]:
-        return self._embed(text)
-
-    async def embed_query(self, text: str) -> list[float]:
-        return self._embed(text)
-
-    def _embed(self, text: str) -> list[float]:
-        values = [0.0] * self._dimensions
-        for token in text.lower().split():
-            slot = int(hashlib.sha256(token.encode("utf-8")).hexdigest(), 16) % self._dimensions
-            values[slot] += 1.0
-        return values
+from app.schemas import HistoryTurn, SearchChunk
 
 
 class GroqChatClient:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
+        self._prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "Responda somente com base no contexto recuperado. "
+                    "Quando apropriado, cite apenas o nome do arquivo entre colchetes. "
+                    "Nao exponha indices, IDs internos ou nomes de chunks.",
+                ),
+                MessagesPlaceholder("history"),
+                ("human", "Contexto:\n{context}\n\nPergunta: {question}"),
+            ]
+        )
 
-    async def complete(self, messages: Sequence[dict[str, str]]) -> tuple[str, str]:
-        try:
-            return await self._complete(messages, self._settings.primary_llm_model)
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code != 429:
-                raise
-            return await self._complete(messages, self._settings.fallback_llm_model)
-
-    async def _complete(
+    async def complete(
         self,
-        messages: Sequence[dict[str, str]],
-        model: str,
+        question: str,
+        chunks: list[SearchChunk],
+        history: list[HistoryTurn],
+        max_context_words: int,
     ) -> tuple[str, str]:
+        try:
+            answer = await self._invoke(
+                question, chunks, history, max_context_words, self._settings.primary_llm_model
+            )
+            return answer, self._settings.primary_llm_model
+        except Exception as exc:
+            if not _is_rate_limit(exc):
+                raise
+            answer = await self._invoke(
+                question, chunks, history, max_context_words, self._settings.fallback_llm_model
+            )
+            return answer, self._settings.fallback_llm_model
+
+    async def _invoke(
+        self,
+        question: str,
+        chunks: list[SearchChunk],
+        history: list[HistoryTurn],
+        max_context_words: int,
+        model: str,
+    ) -> str:
         if not self._settings.groq_api_key:
             raise RuntimeError("GROQ_API_KEY is required to answer chat requests.")
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {self._settings.groq_api_key}"},
-                json={
-                    "model": model,
-                    "messages": list(messages),
-                    "temperature": 0,
-                    "max_tokens": 1024,
-                },
-            )
-            response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"], model
+        context = "\n\n".join(f"[Fonte: {chunk.file_name}]\n{chunk.chunk_text}" for chunk in chunks)
+        context = " ".join(context.split()[:max_context_words])
+        prior_messages = [
+            HumanMessage(content=turn.content)
+            if turn.role == "user"
+            else AIMessage(content=turn.content)
+            for turn in history
+        ]
+        chat_model = ChatGroq(
+            api_key=self._settings.groq_api_key,
+            model=model,
+            temperature=0,
+            max_tokens=1024,
+            timeout=60,
+            max_retries=0,
+        )
+        chain = self._prompt | chat_model | StrOutputParser()
+        return await chain.ainvoke(
+            {"context": context, "question": question, "history": prior_messages}
+        )
+
+
+def _is_rate_limit(exc: Exception) -> bool:
+    status_code = getattr(exc, "status_code", None)
+    if status_code == 429:
+        return True
+    response = getattr(exc, "response", None)
+    return getattr(response, "status_code", None) == 429

@@ -82,8 +82,10 @@ class DocumentStatusResponse(BaseModel):
     project_id: str
     material_id: str
     file_name: str
+    content_type: str
     status: str
     chunk_count: int
+    error_message: str | None = None
 
 
 class DocumentContentResponse(DocumentStatusResponse):

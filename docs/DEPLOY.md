@@ -71,8 +71,10 @@ a origem do servico existente, nao cria outro Static Site.
 ## Inicializacao E Verificacao
 
 No primeiro startup bem sucedido, o backend habilita `pgvector`, aplica as
-migrations e indexa idempotentemente o documento demonstrativo de `proj-demo`.
-O backend aceita origens `*.onrender.com` para o frontend publicado.
+migrations, inicializa a colecao LangChain
+`docai_documents_gemini_embedding_2_768_v1` e cria somente projeto/token
+demonstrativos. Nenhum documento e semeado. O backend aceita origens
+`*.onrender.com` para o frontend publicado.
 
 Verifique a API:
 
@@ -81,8 +83,9 @@ GET https://<api>.onrender.com/health
 GET https://<api>.onrender.com/api/v1/projects/proj-demo
 ```
 
-Em seguida acesse o Static Site; ele deve listar `architecture.md` e responder
-uma pergunta sobre Render ou Supabase citando o documento seed.
+Em seguida acesse o Static Site, abra **Materiais**, envie um arquivo `PDF`,
+`DOCX`, `TXT` ou `MD` de ate 10 MB e abra o texto extraido. Uma pergunta
+baseada nesse arquivo deve responder citando somente o nome do documento.
 
 ## Recursos E Limites
 
@@ -90,14 +93,15 @@ uma pergunta sobre Render ou Supabase citando o documento seed.
 | --- | --- | --- |
 | Render | Web Service Docker Free | API FastAPI |
 | Render | Static Site Free | SPA Vite |
-| Supabase | Postgres Free + `pgvector` | Dados e vetores |
-| Gemini | `gemini-embedding-001` | Embeddings |
-| Groq | Chat completions | Respostas RAG |
+| Supabase | Postgres Free + `pgvector` | Dados e colecao LangChain PGVector |
+| Gemini | `gemini-embedding-2` (768 dimensoes) | Embeddings |
+| Groq | `ChatGroq` via LangChain | Respostas RAG |
 
 - O web service gratuito pode dormir por inatividade e apresentar cold start.
 - O projeto Supabase gratuito pode pausar apos periodo sem atividade.
 - Gemini e Groq estao sujeitos as cotas dos seus planos.
 - `dev-token` e autenticacao demonstrativa, nao autenticacao de producao.
+- O upload armazena somente texto extraido; PDF sem camada textual nao inclui OCR.
 
 ## Desenvolvimento Local
 

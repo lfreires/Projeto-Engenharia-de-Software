@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.dependencies import get_services
@@ -22,6 +24,22 @@ def token_value(credentials: HTTPAuthorizationCredentials | None) -> str:
 @router.get("/health")
 async def health():
     return {"status": "ok", "service": "ingestion"}
+
+
+@router.post(
+    "/uploads",
+    response_model=DocumentStatusResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_document(
+    project_id: Annotated[str, Form(...)],
+    file: Annotated[UploadFile, File(...)],
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    services: Services = Depends(get_services),
+):
+    services.authorize(token_value(credentials), project_id)
+    payload = await file.read(services.settings.max_upload_bytes + 1)
+    return await services.upload_document(project_id, file.filename or "", payload)
 
 
 @router.post(

@@ -26,6 +26,8 @@ interface BackendChatResponse {
 function inferMaterialType(filename: string): MaterialType {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf") return "pdf";
+  if (ext === "docx") return "document";
+  if (ext === "txt") return "text";
   if (["xlsx", "xls", "csv"].includes(ext)) return "spreadsheet";
   if (["md", "mdx"].includes(ext)) return "markdown";
   if (ext === "sql") return "sql";
@@ -50,7 +52,7 @@ function errorMessage(status: number): string {
     case 401:
       return "Sessao expirada. Recarregue a pagina e tente novamente.";
     case 404:
-      return "Nenhum documento indexado encontrado para este projeto.";
+      return "Envie um documento em Materiais antes de fazer perguntas.";
     case 429:
       return "Limite de requisicoes atingido. Aguarde alguns instantes e tente novamente.";
     case 503:

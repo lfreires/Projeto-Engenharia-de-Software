@@ -17,3 +17,7 @@ Valores de build:
 A URL do backend atualmente provisionado foi registrada na Blueprint para que
 o Static Site ja seja construido conectado. Atualize esse valor caso o backend
 seja recriado com outro subdominio.
+
+O projeto abre sem material artificial. Para validar a publicacao, abra
+**Materiais**, envie um arquivo `PDF`, `DOCX`, `TXT` ou `MD` (ate 10 MB) e
+confirme que o texto extraido aparece antes de consultar o chat.

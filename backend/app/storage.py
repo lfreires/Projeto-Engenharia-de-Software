@@ -1,6 +1,5 @@
 import hashlib
 import json
-import math
 import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -17,14 +16,34 @@ from app.schemas import (
     MaterialVersion,
     MembershipItem,
     Project,
-    SearchChunk,
     TokenValidationResponse,
     UserItem,
+)
+
+DOCUMENT_FIELDS = (
+    "id AS document_id, project_id, material_id, file_name, content_type, "
+    "status, chunk_count, error_message"
 )
 
 
 def token_hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def content_digest(content: str) -> str:
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+def new_document_id() -> str:
+    return f"doc-{uuid.uuid4().hex}"
+
+
+def new_material_id() -> str:
+    return f"mat-{uuid.uuid4().hex}"
+
+
+def new_version_id() -> str:
+    return f"ver-{uuid.uuid4().hex}"
 
 
 class Store(Protocol):
@@ -48,28 +67,33 @@ class Store(Protocol):
         self, project_id: str, material_id: str, content_hash: str
     ) -> DocumentStatusResponse | None: ...
 
-    def add_document(
+    def create_upload_document(
         self,
-        document: DocumentStatusResponse,
+        project_id: str,
+        title: str,
+        file_name: str,
+        content_type: str,
         content_hash: str,
-        content: str,
-        chunks: list[tuple[str, list[float]]],
-        embedding_model: str,
-        embedding_dimensions: int,
+    ) -> DocumentStatusResponse: ...
+
+    def create_document_version(
+        self,
+        project_id: str,
+        material_id: str,
+        file_name: str,
+        content_type: str,
+        content_hash: str,
+    ) -> DocumentStatusResponse: ...
+
+    def mark_document_indexed(self, document_id: str, content: str, chunk_count: int) -> None: ...
+
+    def mark_document_failed(
+        self, document_id: str, error_message: str, content: str | None = None
     ) -> None: ...
 
     def get_document(self, document_id: str) -> DocumentStatusResponse | None: ...
 
     def get_document_content(self, document_id: str) -> str | None: ...
-
-    def search(
-        self,
-        project_id: str,
-        embedding: list[float],
-        top_k: int,
-        embedding_model: str,
-        embedding_dimensions: int,
-    ) -> list[SearchChunk]: ...
 
     def get_history(self, session_id: str) -> list[HistoryTurn]: ...
 
@@ -118,9 +142,7 @@ class PostgresStore:
                 )
             connection.commit()
 
-    def validate_token(
-        self, token: str, project_id: str | None
-    ) -> TokenValidationResponse | None:
+    def validate_token(self, token: str, project_id: str | None) -> TokenValidationResponse | None:
         with self._connection() as connection:
             record = connection.execute(
                 "SELECT subject_id, subject_type, permissions FROM api_tokens "
@@ -190,7 +212,8 @@ class PostgresStore:
                 "(SELECT id, material_id, version, document_id, file_name, created_at "
                 "FROM material_versions WHERE material_id = m.id "
                 "ORDER BY version DESC LIMIT 1) v ON true "
-                "WHERE m.project_id = %s ORDER BY m.id",
+                "JOIN documents d ON d.id = v.document_id AND d.status = 'indexed' "
+                "WHERE m.project_id = %s ORDER BY m.created_at DESC",
                 (project_id,),
             ).fetchall()
         return [
@@ -224,120 +247,115 @@ class PostgresStore:
     ) -> DocumentStatusResponse | None:
         with self._connection() as connection:
             row = connection.execute(
-                "SELECT id AS document_id, project_id, material_id, file_name, status, chunk_count "
-                "FROM documents WHERE project_id = %s AND material_id = %s AND content_hash = %s",
+                f"SELECT {DOCUMENT_FIELDS} FROM documents "
+                "WHERE project_id = %s AND material_id = %s AND content_hash = %s",
                 (project_id, material_id, content_hash),
             ).fetchone()
         return DocumentStatusResponse(**row) if row else None
 
-    def add_document(
+    def create_upload_document(
         self,
-        document: DocumentStatusResponse,
+        project_id: str,
+        title: str,
+        file_name: str,
+        content_type: str,
         content_hash: str,
-        content: str,
-        chunks: list[tuple[str, list[float]]],
-        embedding_model: str,
-        embedding_dimensions: int,
+    ) -> DocumentStatusResponse:
+        material_id = new_material_id()
+        document = _pending_document(project_id, material_id, file_name, content_type)
+        with self._connection() as connection:
+            connection.execute(
+                "INSERT INTO materials (id, project_id, title, content_type) "
+                "VALUES (%s, %s, %s, %s)",
+                (material_id, project_id, title, content_type),
+            )
+            self._insert_document(connection, document, content_hash, 1)
+            connection.commit()
+        return document
+
+    def create_document_version(
+        self,
+        project_id: str,
+        material_id: str,
+        file_name: str,
+        content_type: str,
+        content_hash: str,
+    ) -> DocumentStatusResponse:
+        document = _pending_document(project_id, material_id, file_name, content_type)
+        with self._connection() as connection:
+            version = connection.execute(
+                "SELECT COALESCE(max(version), 0) + 1 AS version FROM material_versions "
+                "WHERE material_id = %s",
+                (material_id,),
+            ).fetchone()["version"]
+            self._insert_document(connection, document, content_hash, version)
+            connection.commit()
+        return document
+
+    def _insert_document(
+        self, connection: Any, document: DocumentStatusResponse, content_hash: str, version: int
+    ) -> None:
+        connection.execute(
+            "INSERT INTO documents "
+            "(id, project_id, material_id, file_name, content_type, content_hash, "
+            "status, chunk_count) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            (
+                document.document_id,
+                document.project_id,
+                document.material_id,
+                document.file_name,
+                document.content_type,
+                content_hash,
+                document.status,
+                document.chunk_count,
+            ),
+        )
+        connection.execute(
+            "INSERT INTO material_versions "
+            "(id, material_id, version, document_id, file_name) VALUES (%s, %s, %s, %s, %s)",
+            (
+                new_version_id(),
+                document.material_id,
+                version,
+                document.document_id,
+                document.file_name,
+            ),
+        )
+
+    def mark_document_indexed(self, document_id: str, content: str, chunk_count: int) -> None:
+        with self._connection() as connection:
+            connection.execute(
+                "UPDATE documents SET content = %s, status = 'indexed', chunk_count = %s, "
+                "error_message = NULL WHERE id = %s",
+                (content, chunk_count, document_id),
+            )
+            connection.commit()
+
+    def mark_document_failed(
+        self, document_id: str, error_message: str, content: str | None = None
     ) -> None:
         with self._connection() as connection:
             connection.execute(
-                "INSERT INTO documents "
-                "(id, project_id, material_id, file_name, content_hash, content, "
-                "status, chunk_count) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-                (
-                    document.document_id,
-                    document.project_id,
-                    document.material_id,
-                    document.file_name,
-                    content_hash,
-                    content,
-                    document.status,
-                    document.chunk_count,
-                ),
-            )
-            for index, (text, embedding) in enumerate(chunks):
-                connection.execute(
-                    "INSERT INTO document_chunks "
-                    "(document_id, project_id, material_id, file_name, chunk_index, chunk_text, "
-                    "embedding_model, embedding_dimensions, embedding) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::extensions.vector)",
-                    (
-                        document.document_id,
-                        document.project_id,
-                        document.material_id,
-                        document.file_name,
-                        index,
-                        text,
-                        embedding_model,
-                        embedding_dimensions,
-                        _vector_literal(embedding),
-                    ),
-                )
-            connection.execute(
-                "UPDATE material_versions SET document_id = %s, file_name = %s "
-                "WHERE material_id = %s AND version = "
-                "(SELECT max(version) FROM material_versions WHERE material_id = %s)",
-                (
-                    document.document_id,
-                    document.file_name,
-                    document.material_id,
-                    document.material_id,
-                ),
+                "UPDATE documents SET content = COALESCE(%s, content), status = 'failed', "
+                "error_message = %s WHERE id = %s",
+                (content, error_message[:1000], document_id),
             )
             connection.commit()
 
     def get_document(self, document_id: str) -> DocumentStatusResponse | None:
         with self._connection() as connection:
             row = connection.execute(
-                "SELECT id AS document_id, project_id, material_id, file_name, status, chunk_count "
-                "FROM documents WHERE id = %s",
-                (document_id,),
+                f"SELECT {DOCUMENT_FIELDS} FROM documents WHERE id = %s", (document_id,)
             ).fetchone()
         return DocumentStatusResponse(**row) if row else None
 
     def get_document_content(self, document_id: str) -> str | None:
         with self._connection() as connection:
             row = connection.execute(
-                "SELECT COALESCE(d.content, "
-                "string_agg(c.chunk_text, E'\n\n' ORDER BY c.chunk_index)) AS content "
-                "FROM documents d LEFT JOIN document_chunks c ON c.document_id = d.id "
-                "WHERE d.id = %s GROUP BY d.content",
-                (document_id,),
+                "SELECT content FROM documents WHERE id = %s", (document_id,)
             ).fetchone()
         return row["content"] if row and row["content"] is not None else None
-
-    def search(
-        self,
-        project_id: str,
-        embedding: list[float],
-        top_k: int,
-        embedding_model: str,
-        embedding_dimensions: int,
-    ) -> list[SearchChunk]:
-        with self._connection() as connection:
-            rows = connection.execute(
-                "SELECT c.document_id, c.project_id, c.material_id, c.file_name, "
-                "c.chunk_index, c.chunk_text, "
-                "c.file_name || '#chunk-' || c.chunk_index AS location, "
-                "1 - (c.embedding OPERATOR(extensions.<=>) %s::extensions.vector) AS score "
-                "FROM document_chunks c JOIN material_versions v "
-                "ON v.material_id = c.material_id AND v.document_id = c.document_id "
-                "WHERE c.project_id = %s AND c.embedding_model = %s "
-                "AND c.embedding_dimensions = %s "
-                "AND v.version = (SELECT max(latest.version) FROM material_versions latest "
-                "WHERE latest.material_id = v.material_id) "
-                "ORDER BY c.embedding OPERATOR(extensions.<=>) %s::extensions.vector LIMIT %s",
-                (
-                    _vector_literal(embedding),
-                    project_id,
-                    embedding_model,
-                    embedding_dimensions,
-                    _vector_literal(embedding),
-                    top_k,
-                ),
-            ).fetchall()
-        return [SearchChunk(**row) for row in rows]
 
     def get_history(self, session_id: str) -> list[HistoryTurn]:
         with self._connection() as connection:
@@ -413,27 +431,9 @@ class PostgresStore:
                 connection.execute(
                     "INSERT INTO api_tokens "
                     "(token_hash, subject_id, subject_type, active, permissions) "
-                    "VALUES (%s, %s, %s, true, %s::jsonb) "
-                    "ON CONFLICT (token_hash) DO NOTHING",
+                    "VALUES (%s, %s, %s, true, %s::jsonb) ON CONFLICT (token_hash) DO NOTHING",
                     (token_hash(token), subject_id, subject_type, json.dumps(token_permissions)),
                 )
-            connection.execute(
-                "INSERT INTO materials (id, project_id, title, content_type) "
-                "VALUES (%s, %s, %s, %s) ON CONFLICT (id) DO NOTHING",
-                ("mat-architecture", "proj-demo", "Arquitetura DocAI", "text/markdown"),
-            )
-            connection.execute(
-                "INSERT INTO material_versions "
-                "(id, material_id, version, document_id, file_name) VALUES (%s, %s, %s, %s, %s) "
-                "ON CONFLICT (id) DO NOTHING",
-                (
-                    "mat-architecture-v1",
-                    "mat-architecture",
-                    1,
-                    "pending-seed-document",
-                    "architecture.md",
-                ),
-            )
             connection.commit()
 
 
@@ -449,13 +449,10 @@ class MemoryStore:
         self.documents: dict[str, DocumentStatusResponse] = {}
         self.document_contents: dict[str, str] = {}
         self.document_hashes: dict[tuple[str, str, str], str] = {}
-        self.chunks: list[tuple[SearchChunk, list[float], str, int]] = []
         self.history: dict[str, list[HistoryTurn]] = {}
         self.feedback: dict[str, FeedbackRequest] = {}
 
-    def validate_token(
-        self, token: str, project_id: str | None
-    ) -> TokenValidationResponse | None:
+    def validate_token(self, token: str, project_id: str | None) -> TokenValidationResponse | None:
         record = self.tokens.get(token_hash(token))
         if record is None:
             return None
@@ -490,7 +487,11 @@ class MemoryStore:
 
     def list_materials(self, project_id: str) -> list[Material]:
         return [
-            material for material in self.materials.values() if material.project_id == project_id
+            material
+            for material in self.materials.values()
+            if material.project_id == project_id
+            and self.documents.get(material.latest_version.document_id) is not None
+            and self.documents[material.latest_version.document_id].status == "indexed"
         ]
 
     def has_material(self, project_id: str, material_id: str) -> bool:
@@ -503,84 +504,68 @@ class MemoryStore:
         document_id = self.document_hashes.get((project_id, material_id, content_hash))
         return self.documents.get(document_id) if document_id else None
 
-    def add_document(
+    def create_upload_document(
         self,
-        document: DocumentStatusResponse,
+        project_id: str,
+        title: str,
+        file_name: str,
+        content_type: str,
         content_hash: str,
-        content: str,
-        chunks: list[tuple[str, list[float]]],
-        embedding_model: str,
-        embedding_dimensions: int,
-    ) -> None:
+    ) -> DocumentStatusResponse:
+        material_id = new_material_id()
+        document = _pending_document(project_id, material_id, file_name, content_type)
+        self.materials[material_id] = Material(
+            id=material_id,
+            project_id=project_id,
+            title=title,
+            content_type=content_type,
+            latest_version=_version(material_id, 1, document),
+        )
+        self._store_pending(document, content_hash)
+        return document
+
+    def create_document_version(
+        self,
+        project_id: str,
+        material_id: str,
+        file_name: str,
+        content_type: str,
+        content_hash: str,
+    ) -> DocumentStatusResponse:
+        document = _pending_document(project_id, material_id, file_name, content_type)
+        material = self.materials[material_id]
+        material.latest_version = _version(
+            material_id, material.latest_version.version + 1, document
+        )
+        self._store_pending(document, content_hash)
+        return document
+
+    def _store_pending(self, document: DocumentStatusResponse, content_hash: str) -> None:
         self.documents[document.document_id] = document
-        self.document_contents[document.document_id] = content
         self.document_hashes[(document.project_id, document.material_id, content_hash)] = (
             document.document_id
         )
-        for index, (text, embedding) in enumerate(chunks):
-            self.chunks.append(
-                (
-                    SearchChunk(
-                        document_id=document.document_id,
-                        project_id=document.project_id,
-                        material_id=document.material_id,
-                        file_name=document.file_name,
-                        location=f"{document.file_name}#chunk-{index}",
-                        chunk_index=index,
-                        chunk_text=text,
-                        score=0,
-                    ),
-                    embedding,
-                    embedding_model,
-                    embedding_dimensions,
-                )
-            )
-        material = self.materials.get(document.material_id)
-        if material:
-            material.latest_version.document_id = document.document_id
-            material.latest_version.file_name = document.file_name
+
+    def mark_document_indexed(self, document_id: str, content: str, chunk_count: int) -> None:
+        self.documents[document_id] = self.documents[document_id].model_copy(
+            update={"status": "indexed", "chunk_count": chunk_count, "error_message": None}
+        )
+        self.document_contents[document_id] = content
+
+    def mark_document_failed(
+        self, document_id: str, error_message: str, content: str | None = None
+    ) -> None:
+        self.documents[document_id] = self.documents[document_id].model_copy(
+            update={"status": "failed", "error_message": error_message[:1000]}
+        )
+        if content is not None:
+            self.document_contents[document_id] = content
 
     def get_document(self, document_id: str) -> DocumentStatusResponse | None:
         return self.documents.get(document_id)
 
     def get_document_content(self, document_id: str) -> str | None:
-        content = self.document_contents.get(document_id)
-        if content is not None:
-            return content
-        chunks = [
-            chunk
-            for chunk, _, _, _ in self.chunks
-            if chunk.document_id == document_id
-        ]
-        if not chunks:
-            return None
-        chunks.sort(key=lambda chunk: chunk.chunk_index)
-        return "\n\n".join(chunk.chunk_text for chunk in chunks)
-
-    def search(
-        self,
-        project_id: str,
-        embedding: list[float],
-        top_k: int,
-        embedding_model: str,
-        embedding_dimensions: int,
-    ) -> list[SearchChunk]:
-        results: list[SearchChunk] = []
-        for chunk, stored_embedding, model, dimensions in self.chunks:
-            material = self.materials.get(chunk.material_id)
-            if (
-                chunk.project_id != project_id
-                or model != embedding_model
-                or dimensions != embedding_dimensions
-                or material is None
-                or material.latest_version.document_id != chunk.document_id
-            ):
-                continue
-            score = _cosine_similarity(embedding, stored_embedding)
-            if score > 0:
-                results.append(chunk.model_copy(update={"score": score}))
-        results.sort(key=lambda result: result.score, reverse=True)
-        return results[:top_k]
+        return self.document_contents.get(document_id)
 
     def get_history(self, session_id: str) -> list[HistoryTurn]:
         return list(self.history.get(session_id, []))
@@ -621,10 +606,7 @@ class MemoryStore:
         self.memberships.setdefault(
             ("proj-demo", "user-demo"),
             MembershipItem(
-                project_id="proj-demo",
-                user_id="user-demo",
-                role="owner",
-                permissions=permissions,
+                project_id="proj-demo", user_id="user-demo", role="owner", permissions=permissions
             ),
         )
         self.tokens.setdefault(
@@ -639,41 +621,28 @@ class MemoryStore:
                 "permissions": ["ingestion:search", "identity:validate"],
             },
         )
-        self.materials.setdefault(
-            "mat-architecture",
-            Material(
-                id="mat-architecture",
-                project_id="proj-demo",
-                title="Arquitetura DocAI",
-                content_type="text/markdown",
-                latest_version=MaterialVersion(
-                    id="mat-architecture-v1",
-                    material_id="mat-architecture",
-                    version=1,
-                    document_id="pending-seed-document",
-                    file_name="architecture.md",
-                    created_at=datetime(2026, 1, 1, tzinfo=UTC),
-                ),
-            ),
-        )
 
 
-def new_document_id() -> str:
-    return f"doc-{uuid.uuid4().hex}"
+def _pending_document(
+    project_id: str, material_id: str, file_name: str, content_type: str
+) -> DocumentStatusResponse:
+    return DocumentStatusResponse(
+        document_id=new_document_id(),
+        project_id=project_id,
+        material_id=material_id,
+        file_name=file_name,
+        content_type=content_type,
+        status="processing",
+        chunk_count=0,
+    )
 
 
-def content_digest(content: str) -> str:
-    return hashlib.sha256(content.encode("utf-8")).hexdigest()
-
-
-def _vector_literal(values: list[float]) -> str:
-    return "[" + ",".join(str(float(value)) for value in values) + "]"
-
-
-def _cosine_similarity(left: list[float], right: list[float]) -> float:
-    numerator = sum(a * b for a, b in zip(left, right, strict=True))
-    left_norm = math.sqrt(sum(value * value for value in left))
-    right_norm = math.sqrt(sum(value * value for value in right))
-    if not left_norm or not right_norm:
-        return 0.0
-    return numerator / (left_norm * right_norm)
+def _version(material_id: str, number: int, document: DocumentStatusResponse) -> MaterialVersion:
+    return MaterialVersion(
+        id=new_version_id(),
+        material_id=material_id,
+        version=number,
+        document_id=document.document_id,
+        file_name=document.file_name,
+        created_at=datetime.now(UTC),
+    )

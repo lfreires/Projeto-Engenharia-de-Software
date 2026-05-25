@@ -15,6 +15,10 @@ No Blueprint atual, `VITE_API_BASE_URL=https://docai-v8qm.onrender.com` conecta
 automaticamente o Static Site ao backend existente. O backend permite origens
 Static Site `*.onrender.com` via CORS.
 
+No painel **Materiais**, o usuario pode enviar arquivos `PDF`, `DOCX`, `TXT`
+ou `MD` de ate 10 MB. A indexacao ocorre durante o envio e o leitor exibe o
+texto extraido; o arquivo original nao e armazenado.
+
 ## Desenvolvimento
 
 ```bash

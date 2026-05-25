@@ -26,6 +26,14 @@ interface BackendDocumentContent {
   content: string;
 }
 
+interface BackendUploadResponse {
+  document_id: string;
+  material_id: string;
+  file_name: string;
+  status: string;
+  chunk_count: number;
+}
+
 export class BackendConnectionError extends Error {
   constructor(message: string) {
     super(message);
@@ -54,6 +62,8 @@ async function fetchJson<T>(path: string): Promise<T> {
 function inferMaterialType(contentType: string, filename: string): MaterialType {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   if (contentType.includes("pdf") || ext === "pdf") return "pdf";
+  if (ext === "docx") return "document";
+  if (ext === "txt") return "text";
   if (["xlsx", "xls", "csv"].includes(ext)) return "spreadsheet";
   if (["md", "mdx"].includes(ext)) return "markdown";
   if (ext === "sql") return "sql";
@@ -104,4 +114,29 @@ export async function fetchDocumentContent(documentId: string): Promise<string> 
     `/api/v1/ingestion/documents/${documentId}/content`,
   );
   return data.content;
+}
+
+export async function uploadProjectDocument(
+  file: File,
+  projectId: string = PROJECT_ID,
+): Promise<BackendUploadResponse> {
+  const form = new FormData();
+  form.append("project_id", projectId);
+  form.append("file", file);
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/v1/ingestion/uploads`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${BEARER_TOKEN}` },
+      body: form,
+    });
+  } catch {
+    throw new BackendConnectionError("Nao foi possivel conectar ao backend.");
+  }
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    const message = payload?.detail?.message ?? `Backend respondeu com HTTP ${response.status}.`;
+    throw new BackendConnectionError(message);
+  }
+  return response.json() as Promise<BackendUploadResponse>;
 }

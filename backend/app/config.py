@@ -18,10 +18,13 @@ class Settings(BaseSettings):
     fallback_llm_model: str = "llama-3.1-8b-instant"
 
     gemini_api_key: str = ""
-    embedding_model: str = "gemini-embedding-001"
+    embedding_model: str = "gemini-embedding-2"
     embedding_dimensions: int = 768
+    vector_collection_name: str = "docai_documents_gemini_embedding_2_768_v1"
 
-    default_chunk_max_words: int = 180
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
+    max_upload_bytes: int = 10 * 1024 * 1024
     max_context_words: int = 1500
     max_history_turns: int = 5
     run_migrations: bool = True

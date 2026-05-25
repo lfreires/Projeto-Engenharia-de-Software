@@ -31,6 +31,7 @@ export default function App() {
     closePanel,
     selectMaterial,
     clearSelection,
+    uploadMaterial,
     connectionError: materialsError,
   } = useMaterials();
   const [projectName, setProjectName] = React.useState(PROJECT_ID);
@@ -83,6 +84,7 @@ export default function App() {
               selectedMaterial={selectedMaterial}
               onSelectMaterial={selectMaterial}
               onClearSelection={clearSelection}
+              onUpload={uploadMaterial}
               onClose={closePanel}
             />
           )}
