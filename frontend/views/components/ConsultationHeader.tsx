@@ -19,12 +19,12 @@ export function ConsultationHeader({
   return (
     <header
       className="shrink-0 flex items-center px-6 gap-3"
-      style={{ height: "60px", borderBottom: "0.5px solid #e2e5ee", backgroundColor: "#ffffff" }}
+      style={{ height: "60px", borderBottom: "0.5px solid #232733", backgroundColor: "#11141b" }}
     >
       {/* Left — title + project */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2.5">
-          <h1 style={{ fontSize: "15px", fontWeight: 600, color: "#111827", margin: 0 }}>
+          <h1 style={{ fontSize: "15px", fontWeight: 600, color: "#f3f4f9", margin: 0 }}>
             Consulta ao Projeto
           </h1>
 
@@ -33,9 +33,9 @@ export function ConsultationHeader({
             style={{
               fontSize: "10.5px",
               fontWeight: 500,
-              backgroundColor: "#f0fdf4",
-              border: "0.5px solid #bbf7d0",
-              color: "#166534",
+              backgroundColor: "rgba(34, 197, 94, 0.15)",
+              border: "0.5px solid rgba(34, 197, 94, 0.35)",
+              color: "#86efac",
             }}
           >
             <span
@@ -46,9 +46,9 @@ export function ConsultationHeader({
           </span>
         </div>
 
-        <p style={{ fontSize: "11.5px", color: "#a0a4b8", margin: 0, marginTop: "1px" }}>
+        <p style={{ fontSize: "11.5px", color: "#8b90a5", margin: 0, marginTop: "1px" }}>
           Projeto:{" "}
-          <span style={{ color: "#4f46e5", fontWeight: 500 }}>{projectName}</span>
+          <span style={{ color: "#a5b4fc", fontWeight: 500 }}>{projectName}</span>
         </p>
       </div>
 
@@ -60,17 +60,17 @@ export function ConsultationHeader({
           style={{
             fontSize: "12px",
             fontWeight: 500,
-            color: "#7c80a0",
-            backgroundColor: "#f3f4f9",
-            border: "0.5px solid #e0e3ef",
+            color: "#c4c8d6",
+            backgroundColor: "#1a1d25",
+            border: "0.5px solid #232733",
             cursor: "pointer",
           }}
           title="Nova consulta"
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#e8eaf2";
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1f2330";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f3f4f9";
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1a1d25";
           }}
         >
           <RotateCcw size={12} />
@@ -83,19 +83,19 @@ export function ConsultationHeader({
           style={{
             fontSize: "12px",
             fontWeight: 500,
-            color: showMaterials ? "#4f46e5" : "#7c80a0",
-            backgroundColor: showMaterials ? "#eef2ff" : "#f3f4f9",
-            border: showMaterials ? "0.5px solid #c7d2fe" : "0.5px solid #e0e3ef",
+            color: showMaterials ? "#a5b4fc" : "#c4c8d6",
+            backgroundColor: showMaterials ? "rgba(99, 102, 241, 0.18)" : "#1a1d25",
+            border: showMaterials ? "0.5px solid rgba(99, 102, 241, 0.45)" : "0.5px solid #232733",
             cursor: "pointer",
           }}
           title="Painel de materiais"
           onMouseEnter={(e) => {
             if (!showMaterials)
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#e8eaf2";
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1f2330";
           }}
           onMouseLeave={(e) => {
             if (!showMaterials)
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f3f4f9";
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1a1d25";
           }}
         >
           <FolderOpen size={13} />
@@ -104,8 +104,8 @@ export function ConsultationHeader({
             style={{
               fontSize: "9.5px",
               fontWeight: 700,
-              color: showMaterials ? "#4f46e5" : "#a0a4b8",
-              backgroundColor: showMaterials ? "#dde5ff" : "#e8eaf0",
+              color: showMaterials ? "#a5b4fc" : "#8b90a5",
+              backgroundColor: showMaterials ? "rgba(99, 102, 241, 0.25)" : "#232733",
               borderRadius: "9999px",
               padding: "0px 5px",
               minWidth: "16px",

@@ -39,7 +39,7 @@ export function ChatArea({
   }, [connectionError, onConnectionError]);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 min-w-0 bg-white">
+    <div className="flex flex-col flex-1 min-h-0 min-w-0" style={{ backgroundColor: "#0b0d12" }}>
       <ConsultationHeader
         projectName={projectName}
         materialsCount={materialsCount}

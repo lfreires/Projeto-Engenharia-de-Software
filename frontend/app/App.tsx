@@ -10,9 +10,9 @@ function ConnectionBanner({ message }: { message: string }) {
     <div
       className="px-4 py-2"
       style={{
-        backgroundColor: "#fef2f2",
-        borderBottom: "1px solid #fecaca",
-        color: "#991b1b",
+        backgroundColor: "rgba(239, 68, 68, 0.12)",
+        borderBottom: "1px solid rgba(239, 68, 68, 0.35)",
+        color: "#fca5a5",
         fontSize: "13px",
         fontWeight: 500,
       }}
@@ -63,7 +63,8 @@ export default function App() {
       className="flex h-screen overflow-hidden"
       style={{
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-        backgroundColor: "#f8f9fc",
+        backgroundColor: "#0b0d12",
+        color: "#e6e8ee",
       }}
     >
       <DocAISidebar />

@@ -37,7 +37,7 @@ export function MaterialViewer({ material, onBack, onDelete, isDeleting }: Mater
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="px-4 py-3" style={{ borderBottom: "0.5px solid #f0f1f8" }}>
+      <div className="px-4 py-3" style={{ borderBottom: "0.5px solid #1f2330" }}>
         <button
           onClick={onBack}
           className="flex items-center gap-1.5"
@@ -45,7 +45,7 @@ export function MaterialViewer({ material, onBack, onDelete, isDeleting }: Mater
             background: "none",
             border: "none",
             padding: 0,
-            color: "#4f46e5",
+            color: "#a5b4fc",
             cursor: "pointer",
             fontSize: "12px",
             fontWeight: 500,
@@ -55,8 +55,8 @@ export function MaterialViewer({ material, onBack, onDelete, isDeleting }: Mater
           Voltar aos materiais
         </button>
         <div className="flex items-center gap-2 mt-3">
-          <FileText size={15} style={{ color: "#2563eb" }} />
-          <span className="flex-1 truncate" style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e2035" }}>
+          <FileText size={15} style={{ color: "#93c5fd" }} />
+          <span className="flex-1 truncate" style={{ fontSize: "12.5px", fontWeight: 600, color: "#e6e8ee" }}>
             {material.filename}
           </span>
           <button
@@ -66,9 +66,9 @@ export function MaterialViewer({ material, onBack, onDelete, isDeleting }: Mater
             className="flex items-center gap-1"
             style={{
               fontSize: "11px",
-              color: "#b91c1c",
-              border: "0.5px solid #fecaca",
-              backgroundColor: "#fef2f2",
+              color: "#fca5a5",
+              border: "0.5px solid rgba(239, 68, 68, 0.4)",
+              backgroundColor: "rgba(239, 68, 68, 0.12)",
               borderRadius: "6px",
               padding: "4px 7px",
               cursor: isDeleting ? "wait" : "pointer",
@@ -80,15 +80,15 @@ export function MaterialViewer({ material, onBack, onDelete, isDeleting }: Mater
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 overflow-y-auto px-4 py-3" style={{ backgroundColor: "#0e1117" }}>
         {loading && (
-          <div className="flex items-center gap-2" style={{ fontSize: "12px", color: "#7c80a0" }}>
+          <div className="flex items-center gap-2" style={{ fontSize: "12px", color: "#8b90a5" }}>
             <LoaderCircle size={13} />
             Carregando documento...
           </div>
         )}
         {error && (
-          <p style={{ fontSize: "12px", color: "#991b1b", lineHeight: "1.5", margin: 0 }}>
+          <p style={{ fontSize: "12px", color: "#fca5a5", lineHeight: "1.5", margin: 0 }}>
             Nao foi possivel abrir o documento: {error}
           </p>
         )}
@@ -99,7 +99,7 @@ export function MaterialViewer({ material, onBack, onDelete, isDeleting }: Mater
               wordBreak: "break-word",
               fontFamily: "'Inter', system-ui, sans-serif",
               fontSize: "12px",
-              color: "#303449",
+              color: "#c4c8d6",
               lineHeight: "1.65",
               margin: 0,
             }}

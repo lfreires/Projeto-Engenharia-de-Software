@@ -57,25 +57,25 @@ export function ProjectMaterialsPanel({
   return (
     <div
       className="flex flex-col h-full shrink-0"
-      style={{ width: "390px", borderLeft: "0.5px solid #e2e5ee", backgroundColor: "#ffffff" }}
+      style={{ width: "390px", borderLeft: "0.5px solid #232733", backgroundColor: "#11141b" }}
     >
       {/* Header */}
       <div
         className="shrink-0 flex items-center gap-2 px-4"
-        style={{ height: "60px", borderBottom: "0.5px solid #e2e5ee" }}
+        style={{ height: "60px", borderBottom: "0.5px solid #232733" }}
       >
         <div
           className="w-6 h-6 rounded-md flex items-center justify-center"
-          style={{ backgroundColor: "#eef2ff" }}
+          style={{ backgroundColor: "rgba(99, 102, 241, 0.18)" }}
         >
-          <FolderOpen size={13} style={{ color: "#4f46e5" }} />
+          <FolderOpen size={13} style={{ color: "#a5b4fc" }} />
         </div>
 
         <div className="flex-1">
-          <p style={{ fontSize: "13px", fontWeight: 600, color: "#111827", margin: 0 }}>
+          <p style={{ fontSize: "13px", fontWeight: 600, color: "#f3f4f9", margin: 0 }}>
             Materiais
           </p>
-          <p style={{ fontSize: "10.5px", color: "#a0a4b8", margin: 0 }}>
+          <p style={{ fontSize: "10.5px", color: "#8b90a5", margin: 0 }}>
             {materials.length} documentos indexados
           </p>
         </div>
@@ -83,7 +83,7 @@ export function ProjectMaterialsPanel({
         <button
           onClick={onClose}
           className="w-6 h-6 rounded-md flex items-center justify-center"
-          style={{ color: "#c0c4d6", background: "none", border: "none", cursor: "pointer" }}
+          style={{ color: "#8b90a5", background: "none", border: "none", cursor: "pointer" }}
           title="Fechar painel"
         >
           <X size={14} />
@@ -93,7 +93,7 @@ export function ProjectMaterialsPanel({
       {deleteError && (
         <p
           className="mx-4 mt-3 rounded-md px-3 py-2"
-          style={{ fontSize: "11.5px", color: "#991b1b", backgroundColor: "#fef2f2" }}
+          style={{ fontSize: "11.5px", color: "#fca5a5", backgroundColor: "rgba(239, 68, 68, 0.12)", border: "0.5px solid rgba(239, 68, 68, 0.35)" }}
         >
           Falha ao excluir: {deleteError}
         </p>
@@ -113,25 +113,26 @@ export function ProjectMaterialsPanel({
         showArchitectureOption={!materials.some((material) => material.filename === "arquitetura-original.md")}
       />
       {/* Search */}
-      <div className="px-4 py-3" style={{ borderBottom: "0.5px solid #f0f1f8" }}>
+      <div className="px-4 py-3" style={{ borderBottom: "0.5px solid #1f2330" }}>
         <div
           className="flex items-center gap-2"
           style={{
             borderRadius: "7px",
-            border: "0.5px solid #e0e3ef",
-            backgroundColor: "#f8f9fc",
+            border: "0.5px solid #232733",
+            backgroundColor: "#14171f",
             padding: "6px 10px",
           }}
         >
-          <Search size={12} style={{ color: "#a0a4b8", flexShrink: 0 }} />
+          <Search size={12} style={{ color: "#6b7080", flexShrink: 0 }} />
           <input
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filtrar materiais..."
+            className="placeholder:text-[#6b7080]"
             style={{
               fontSize: "12.5px",
-              color: "#1e2035",
+              color: "#e6e8ee",
               backgroundColor: "transparent",
               border: "none",
               outline: "none",
@@ -149,8 +150,8 @@ export function ProjectMaterialsPanel({
       >
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <FolderOpen size={28} style={{ color: "#d0d4e8", marginBottom: "8px" }} />
-            <p style={{ fontSize: "12px", color: "#a0a4b8" }}>
+            <FolderOpen size={28} style={{ color: "#3a3f4d", marginBottom: "8px" }} />
+            <p style={{ fontSize: "12px", color: "#6b7080" }}>
               Envie um documento para comecar
             </p>
           </div>
@@ -171,9 +172,9 @@ export function ProjectMaterialsPanel({
       {/* Footer */}
       <div
         className="shrink-0 px-4 py-2.5"
-        style={{ borderTop: "0.5px solid #e5e8f0", backgroundColor: "#f8f9fc" }}
+        style={{ borderTop: "0.5px solid #232733", backgroundColor: "#0e1117" }}
       >
-        <p style={{ fontSize: "10.5px", color: "#b0b5c8", margin: 0, textAlign: "center" }}>
+        <p style={{ fontSize: "10.5px", color: "#6b7080", margin: 0, textAlign: "center" }}>
           Clique num material para abrir o documento
         </p>
       </div>

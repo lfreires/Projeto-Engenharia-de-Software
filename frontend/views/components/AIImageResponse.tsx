@@ -6,33 +6,33 @@ const LAYERS = [
     label: "Frontend",
     sublabel: "React · Next.js",
     icon: Globe,
-    color: "#4338ca",
-    bg: "#eef2ff",
-    border: "#c7d2fe",
+    color: "#a5b4fc",
+    bg: "rgba(99, 102, 241, 0.15)",
+    border: "rgba(99, 102, 241, 0.4)",
   },
   {
     label: "API Gateway",
     sublabel: "Kong · AWS",
     icon: Layers,
-    color: "#5b21b6",
-    bg: "#f5f3ff",
-    border: "#ddd6fe",
+    color: "#c4b5fd",
+    bg: "rgba(124, 58, 237, 0.18)",
+    border: "rgba(124, 58, 237, 0.4)",
   },
   {
     label: "Microserviços",
     sublabel: "Node.js · Python",
     icon: Server,
-    color: "#6d28d9",
-    bg: "#faf5ff",
-    border: "#e9d5ff",
+    color: "#d8b4fe",
+    bg: "rgba(168, 85, 247, 0.18)",
+    border: "rgba(168, 85, 247, 0.4)",
   },
   {
     label: "Banco de Dados",
     sublabel: "PostgreSQL · Redis",
     icon: Database,
-    color: "#0369a1",
-    bg: "#f0f9ff",
-    border: "#bae6fd",
+    color: "#7dd3fc",
+    bg: "rgba(14, 165, 233, 0.18)",
+    border: "rgba(14, 165, 233, 0.4)",
   },
 ];
 
@@ -40,20 +40,20 @@ export function AIImageResponse() {
   return (
     <div
       className="mt-3 rounded-xl overflow-hidden"
-      style={{ border: "0.5px solid #dde2f0", backgroundColor: "#fafbff" }}
+      style={{ border: "0.5px solid #232733", backgroundColor: "#14171f" }}
     >
       {/* Card header */}
       <div
         className="flex items-center gap-2 px-4 py-2.5"
-        style={{ backgroundColor: "#f3f4f9", borderBottom: "0.5px solid #e5e8f0" }}
+        style={{ backgroundColor: "#1a1d25", borderBottom: "0.5px solid #232733" }}
       >
         <div
           className="w-5 h-5 rounded flex items-center justify-center"
-          style={{ backgroundColor: "#4f46e5" }}
+          style={{ backgroundColor: "#6366f1" }}
         >
           <Zap size={11} fill="white" className="text-white" />
         </div>
-        <span style={{ fontSize: "11px", fontWeight: 600, color: "#4338ca", letterSpacing: "0.04em" }}>
+        <span style={{ fontSize: "11px", fontWeight: 600, color: "#a5b4fc", letterSpacing: "0.04em" }}>
           VISÃO GERAL DO SISTEMA
         </span>
       </div>
@@ -71,21 +71,21 @@ export function AIImageResponse() {
                 >
                   <div
                     className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: layer.color }}
+                    style={{ backgroundColor: "rgba(0, 0, 0, 0.25)", border: `0.5px solid ${layer.border}` }}
                   >
-                    <Icon size={13} className="text-white" />
+                    <Icon size={13} style={{ color: layer.color }} />
                   </div>
                   <div className="flex-1">
                     <div style={{ fontSize: "12px", fontWeight: 700, color: layer.color }}>
                       {layer.label}
                     </div>
-                    <div style={{ fontSize: "10px", color: layer.color, opacity: 0.7 }}>
+                    <div style={{ fontSize: "10px", color: layer.color, opacity: 0.75 }}>
                       {layer.sublabel}
                     </div>
                   </div>
                   <div
                     className="text-right"
-                    style={{ fontSize: "9.5px", color: layer.color, opacity: 0.6, fontWeight: 500 }}
+                    style={{ fontSize: "9.5px", color: layer.color, opacity: 0.7, fontWeight: 500 }}
                   >
                     {i === 0 ? "Interface" : i === 1 ? "Roteamento" : i === 2 ? "Domínio" : "Persistência"}
                   </div>
@@ -93,7 +93,7 @@ export function AIImageResponse() {
 
                 {i < LAYERS.length - 1 && (
                   <div className="flex justify-center">
-                    <div style={{ width: "0.5px", height: "10px", backgroundColor: "#c7cad6" }} />
+                    <div style={{ width: "0.5px", height: "10px", backgroundColor: "#2a2f3d" }} />
                   </div>
                 )}
               </React.Fragment>
@@ -103,10 +103,10 @@ export function AIImageResponse() {
 
         <div
           className="flex items-center gap-1.5 mt-3 pt-2.5"
-          style={{ borderTop: "0.5px solid #e8eaf4" }}
+          style={{ borderTop: "0.5px solid #232733" }}
         >
           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#818cf8" }} />
-          <span style={{ fontSize: "9.5px", color: "#a0a4c0" }}>
+          <span style={{ fontSize: "9.5px", color: "#8b90a5" }}>
             REST · gRPC · Kafka para eventos assíncronos
           </span>
         </div>

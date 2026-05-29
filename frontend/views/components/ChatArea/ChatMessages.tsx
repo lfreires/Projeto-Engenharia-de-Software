@@ -24,14 +24,14 @@ export function ChatMessages({
   return (
     <div
       className="flex-1 overflow-y-auto px-6 py-6"
-      style={{ backgroundColor: "#f8f9fc" }}
+      style={{ backgroundColor: "#0b0d12" }}
     >
       <div className="flex items-center gap-3 mb-6">
-        <div style={{ flex: 1, height: "0.5px", backgroundColor: "#e5e7ef" }} />
-        <span style={{ fontSize: "10.5px", color: "#c0c4d8", padding: "0 4px" }}>
+        <div style={{ flex: 1, height: "0.5px", backgroundColor: "#232733" }} />
+        <span style={{ fontSize: "10.5px", color: "#6b7080", padding: "0 4px" }}>
           Sessão iniciada hoje
         </span>
-        <div style={{ flex: 1, height: "0.5px", backgroundColor: "#e5e7ef" }} />
+        <div style={{ flex: 1, height: "0.5px", backgroundColor: "#232733" }} />
       </div>
 
       {messages.map((msg) => (

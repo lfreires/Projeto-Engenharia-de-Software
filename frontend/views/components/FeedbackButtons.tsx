@@ -35,7 +35,7 @@ export function FeedbackButtons({ messageId, currentFeedback, onFeedback }: Feed
       <span
         style={{
           fontSize: "10px",
-          color: "#b0b5c8",
+          color: "#6b7080",
           fontWeight: 500,
           marginRight: 2,
           userSelect: "none",
@@ -50,12 +50,12 @@ export function FeedbackButtons({ messageId, currentFeedback, onFeedback }: Feed
         title="Resposta útil"
         style={{
           ...baseStyle,
-          backgroundColor: isPositive ? "#ecfdf5" : "#f8f9fc",
-          borderColor: isPositive ? "#6ee7b7" : "#e5e7ef",
-          color: isPositive ? "#059669" : "#9ca3af",
+          backgroundColor: isPositive ? "rgba(34, 197, 94, 0.15)" : "#14171f",
+          borderColor: isPositive ? "rgba(34, 197, 94, 0.5)" : "#232733",
+          color: isPositive ? "#86efac" : "#6b7080",
         }}
       >
-        <ThumbsUp size={12} fill={isPositive ? "#059669" : "none"} />
+        <ThumbsUp size={12} fill={isPositive ? "#86efac" : "none"} />
       </button>
 
       {/* Thumbs down */}
@@ -64,12 +64,12 @@ export function FeedbackButtons({ messageId, currentFeedback, onFeedback }: Feed
         title="Resposta não útil"
         style={{
           ...baseStyle,
-          backgroundColor: isNegative ? "#fff1f2" : "#f8f9fc",
-          borderColor: isNegative ? "#fca5a5" : "#e5e7ef",
-          color: isNegative ? "#dc2626" : "#9ca3af",
+          backgroundColor: isNegative ? "rgba(239, 68, 68, 0.15)" : "#14171f",
+          borderColor: isNegative ? "rgba(239, 68, 68, 0.5)" : "#232733",
+          color: isNegative ? "#fca5a5" : "#6b7080",
         }}
       >
-        <ThumbsDown size={12} fill={isNegative ? "#dc2626" : "none"} />
+        <ThumbsDown size={12} fill={isNegative ? "#fca5a5" : "none"} />
       </button>
 
       {/* Confirmation label after rating */}
@@ -77,7 +77,7 @@ export function FeedbackButtons({ messageId, currentFeedback, onFeedback }: Feed
         <span
           style={{
             fontSize: "10px",
-            color: currentFeedback === "positive" ? "#059669" : "#dc2626",
+            color: currentFeedback === "positive" ? "#86efac" : "#fca5a5",
             fontWeight: 500,
           }}
         >

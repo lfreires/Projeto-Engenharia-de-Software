@@ -60,7 +60,7 @@ export function MaterialUpload({ onUpload, showArchitectureOption }: MaterialUpl
   }
 
   return (
-    <div className="px-4 pt-3 pb-3" style={{ borderBottom: "0.5px solid #f0f1f8" }}>
+    <div className="px-4 pt-3 pb-3" style={{ borderBottom: "0.5px solid #1f2330" }}>
       <div
         role="button"
         tabIndex={0}
@@ -79,17 +79,17 @@ export function MaterialUpload({ onUpload, showArchitectureOption }: MaterialUpl
         style={{
           cursor: "pointer",
           borderRadius: "8px",
-          border: `1px dashed ${dragging ? "#6366f1" : "#c7d2fe"}`,
-          backgroundColor: dragging ? "#eef2ff" : "#f8f9ff",
+          border: `1px dashed ${dragging ? "#818cf8" : "rgba(99, 102, 241, 0.4)"}`,
+          backgroundColor: dragging ? "rgba(99, 102, 241, 0.18)" : "#14171f",
           padding: "12px",
           textAlign: "center",
         }}
       >
-        <FileUp size={18} style={{ color: "#4f46e5", margin: "0 auto 5px" }} />
-        <p style={{ margin: 0, color: "#303449", fontSize: "12px", fontWeight: 500 }}>
+        <FileUp size={18} style={{ color: "#a5b4fc", margin: "0 auto 5px" }} />
+        <p style={{ margin: 0, color: "#e6e8ee", fontSize: "12px", fontWeight: 500 }}>
           Enviar documento
         </p>
-        <p style={{ margin: "3px 0 0", color: "#7c80a0", fontSize: "10.5px" }}>
+        <p style={{ margin: "3px 0 0", color: "#8b90a5", fontSize: "10.5px" }}>
           PDF, DOCX, TXT ou MD ate 10 MB
         </p>
         <input
@@ -108,10 +108,10 @@ export function MaterialUpload({ onUpload, showArchitectureOption }: MaterialUpl
           onClick={submitArchitectureDocument}
           className="w-full mt-2"
           style={{
-            backgroundColor: "#eef2ff",
-            border: "0.5px solid #c7d2fe",
+            backgroundColor: "rgba(99, 102, 241, 0.15)",
+            border: "0.5px solid rgba(99, 102, 241, 0.4)",
             borderRadius: "6px",
-            color: "#4338ca",
+            color: "#a5b4fc",
             cursor: submitting ? "wait" : "pointer",
             fontSize: "11px",
             fontWeight: 500,
@@ -126,7 +126,7 @@ export function MaterialUpload({ onUpload, showArchitectureOption }: MaterialUpl
         <div className="flex items-center gap-2 mt-2">
           <span
             className="flex-1 truncate"
-            style={{ color: "#303449", fontSize: "11px" }}
+            style={{ color: "#d8dbe6", fontSize: "11px" }}
             title={file.name}
           >
             {file.name}
@@ -137,7 +137,7 @@ export function MaterialUpload({ onUpload, showArchitectureOption }: MaterialUpl
             onClick={submit}
             style={{
               alignItems: "center",
-              backgroundColor: "#4f46e5",
+              backgroundColor: "#6366f1",
               border: "none",
               borderRadius: "6px",
               color: "white",
@@ -154,7 +154,7 @@ export function MaterialUpload({ onUpload, showArchitectureOption }: MaterialUpl
         </div>
       )}
       {error && (
-        <p className="flex items-center gap-1 mt-2" style={{ color: "#b91c1c", fontSize: "11px" }}>
+        <p className="flex items-center gap-1 mt-2" style={{ color: "#fca5a5", fontSize: "11px" }}>
           <AlertCircle size={12} />
           {error}
         </p>

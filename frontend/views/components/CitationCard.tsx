@@ -4,14 +4,14 @@ import { CitationSource } from "@/models/citation";
 import { MaterialType } from "@/models/project";
 
 const TYPE_CONFIG: Record<MaterialType, { label: string; color: string; bg: string; border: string; Icon: React.ElementType }> = {
-  pdf:        { label: "PDF",        color: "#dc2626", bg: "#fef2f2", border: "#fecaca", Icon: FileText },
-  document:   { label: "DOCX",       color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", Icon: FileText },
-  text:       { label: "Texto",      color: "#475569", bg: "#f8fafc", border: "#e2e8f0", Icon: FileText },
-  spreadsheet:{ label: "Planilha",   color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", Icon: FileSpreadsheet },
-  markdown:   { label: "Markdown",   color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", Icon: FileText },
-  sql:        { label: "SQL",        color: "#d97706", bg: "#fffbeb", border: "#fde68a", Icon: Database },
-  yaml:       { label: "YAML",       color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe", Icon: FileCode2 },
-  diagram:    { label: "Diagrama",   color: "#0891b2", bg: "#ecfeff", border: "#a5f3fc", Icon: FileText },
+  pdf:        { label: "PDF",        color: "#fca5a5", bg: "rgba(239, 68, 68, 0.15)",  border: "rgba(239, 68, 68, 0.4)",  Icon: FileText },
+  document:   { label: "DOCX",       color: "#93c5fd", bg: "rgba(59, 130, 246, 0.15)", border: "rgba(59, 130, 246, 0.4)", Icon: FileText },
+  text:       { label: "Texto",      color: "#cbd5e1", bg: "rgba(148, 163, 184, 0.15)",border: "rgba(148, 163, 184, 0.4)",Icon: FileText },
+  spreadsheet:{ label: "Planilha",   color: "#86efac", bg: "rgba(34, 197, 94, 0.15)",  border: "rgba(34, 197, 94, 0.4)",  Icon: FileSpreadsheet },
+  markdown:   { label: "Markdown",   color: "#93c5fd", bg: "rgba(59, 130, 246, 0.15)", border: "rgba(59, 130, 246, 0.4)", Icon: FileText },
+  sql:        { label: "SQL",        color: "#fcd34d", bg: "rgba(217, 119, 6, 0.18)",  border: "rgba(217, 119, 6, 0.4)",  Icon: Database },
+  yaml:       { label: "YAML",       color: "#c4b5fd", bg: "rgba(124, 58, 237, 0.18)", border: "rgba(124, 58, 237, 0.4)", Icon: FileCode2 },
+  diagram:    { label: "Diagrama",   color: "#67e8f9", bg: "rgba(8, 145, 178, 0.18)",  border: "rgba(8, 145, 178, 0.4)",  Icon: FileText },
 };
 
 interface CitationCardProps {
@@ -27,8 +27,8 @@ export function CitationCard({ citation, onViewMaterial }: CitationCardProps) {
     <div
       style={{
         borderRadius: "8px",
-        border: "0.5px solid #e5e8f0",
-        backgroundColor: "#fafbff",
+        border: "0.5px solid #232733",
+        backgroundColor: "#14171f",
         padding: "10px 12px",
         marginTop: "6px",
       }}
@@ -41,7 +41,7 @@ export function CitationCard({ citation, onViewMaterial }: CitationCardProps) {
           <Icon size={11} style={{ color: config.color }} />
         </div>
 
-        <span style={{ fontSize: "12px", fontWeight: 600, color: "#1e2035", flex: 1 }}>
+        <span style={{ fontSize: "12px", fontWeight: 600, color: "#e6e8ee", flex: 1 }}>
           {citation.filename}
         </span>
 
@@ -61,12 +61,12 @@ export function CitationCard({ citation, onViewMaterial }: CitationCardProps) {
       </div>
 
       {citation.location && (
-        <p style={{ fontSize: "10.5px", color: "#4f46e5", margin: "0 0 6px 0" }}>
+        <p style={{ fontSize: "10.5px", color: "#a5b4fc", margin: "0 0 6px 0" }}>
           {citation.location}
         </p>
       )}
 
-      <p style={{ fontSize: "11.5px", color: "#6b7080", lineHeight: "1.55", margin: 0, marginBottom: onViewMaterial ? "8px" : 0 }}>
+      <p style={{ fontSize: "11.5px", color: "#a1a6b8", lineHeight: "1.55", margin: 0, marginBottom: onViewMaterial ? "8px" : 0 }}>
         "{citation.excerpt}"
       </p>
 
@@ -74,7 +74,7 @@ export function CitationCard({ citation, onViewMaterial }: CitationCardProps) {
         <button
           onClick={() => onViewMaterial(citation.materialId)}
           className="flex items-center gap-1 mt-1"
-          style={{ fontSize: "11px", fontWeight: 500, color: "#4f46e5", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+          style={{ fontSize: "11px", fontWeight: 500, color: "#a5b4fc", background: "none", border: "none", padding: 0, cursor: "pointer" }}
         >
           <ExternalLink size={10} />
           Ver material

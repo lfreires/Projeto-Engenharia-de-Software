@@ -3,14 +3,14 @@ import { Database, Eye, FileCode2, FileSpreadsheet, FileText, LoaderCircle, Tras
 import { ProjectMaterial, MaterialType } from "@/models/project";
 
 const TYPE_CONFIG: Record<MaterialType, { label: string; color: string; bg: string; border: string; Icon: React.ElementType }> = {
-  pdf:        { label: "PDF",       color: "#dc2626", bg: "#fef2f2", border: "#fecaca", Icon: FileText },
-  document:   { label: "DOCX",      color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", Icon: FileText },
-  text:       { label: "Texto",     color: "#475569", bg: "#f8fafc", border: "#e2e8f0", Icon: FileText },
-  spreadsheet:{ label: "Planilha",  color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", Icon: FileSpreadsheet },
-  markdown:   { label: "Markdown",  color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", Icon: FileText },
-  sql:        { label: "SQL",       color: "#d97706", bg: "#fffbeb", border: "#fde68a", Icon: Database },
-  yaml:       { label: "YAML",      color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe", Icon: FileCode2 },
-  diagram:    { label: "Diagrama",  color: "#0891b2", bg: "#ecfeff", border: "#a5f3fc", Icon: FileText },
+  pdf:        { label: "PDF",       color: "#fca5a5", bg: "rgba(239, 68, 68, 0.15)",   border: "rgba(239, 68, 68, 0.4)",   Icon: FileText },
+  document:   { label: "DOCX",      color: "#93c5fd", bg: "rgba(59, 130, 246, 0.15)",  border: "rgba(59, 130, 246, 0.4)",  Icon: FileText },
+  text:       { label: "Texto",     color: "#cbd5e1", bg: "rgba(148, 163, 184, 0.15)", border: "rgba(148, 163, 184, 0.4)", Icon: FileText },
+  spreadsheet:{ label: "Planilha",  color: "#86efac", bg: "rgba(34, 197, 94, 0.15)",   border: "rgba(34, 197, 94, 0.4)",   Icon: FileSpreadsheet },
+  markdown:   { label: "Markdown",  color: "#93c5fd", bg: "rgba(59, 130, 246, 0.15)",  border: "rgba(59, 130, 246, 0.4)",  Icon: FileText },
+  sql:        { label: "SQL",       color: "#fcd34d", bg: "rgba(217, 119, 6, 0.18)",   border: "rgba(217, 119, 6, 0.4)",   Icon: Database },
+  yaml:       { label: "YAML",      color: "#c4b5fd", bg: "rgba(124, 58, 237, 0.18)",  border: "rgba(124, 58, 237, 0.4)",  Icon: FileCode2 },
+  diagram:    { label: "Diagrama",  color: "#67e8f9", bg: "rgba(8, 145, 178, 0.18)",   border: "rgba(8, 145, 178, 0.4)",   Icon: FileText },
 };
 
 interface MaterialCardProps {
@@ -33,17 +33,17 @@ export function MaterialCard({ material, onSelect, isSelected, onDelete, isDelet
       onKeyDown={(e) => e.key === "Enter" && onSelect?.(material)}
       style={{
         borderRadius: "8px",
-        border: isSelected ? `1px solid #a5b4fc` : "0.5px solid #e5e8f0",
-        backgroundColor: isSelected ? "#f5f3ff" : "#ffffff",
+        border: isSelected ? `1px solid rgba(99, 102, 241, 0.5)` : "0.5px solid #232733",
+        backgroundColor: isSelected ? "rgba(99, 102, 241, 0.12)" : "#14171f",
         padding: "10px 12px",
         cursor: "pointer",
         transition: "all 0.12s",
       }}
       onMouseEnter={(e) => {
-        if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#f8f9ff";
+        if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#1a1d25";
       }}
       onMouseLeave={(e) => {
-        if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#ffffff";
+        if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#14171f";
       }}
     >
       <div className="flex items-start gap-2.5">
@@ -60,7 +60,7 @@ export function MaterialCard({ material, onSelect, isSelected, onDelete, isDelet
               style={{
                 fontSize: "12.5px",
                 fontWeight: 600,
-                color: "#1e2035",
+                color: "#e6e8ee",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -85,16 +85,16 @@ export function MaterialCard({ material, onSelect, isSelected, onDelete, isDelet
             >
               {config.label}
             </span>
-            <span style={{ fontSize: "10px", color: "#a0a4b8" }}>·</span>
-            <span style={{ fontSize: "10px", color: "#a0a4b8" }}>{material.size}</span>
-            <span style={{ fontSize: "10px", color: "#a0a4b8" }}>·</span>
-            <span style={{ fontSize: "10px", color: "#a0a4b8" }}>{material.lastUpdated}</span>
+            <span style={{ fontSize: "10px", color: "#6b7080" }}>·</span>
+            <span style={{ fontSize: "10px", color: "#8b90a5" }}>{material.size}</span>
+            <span style={{ fontSize: "10px", color: "#6b7080" }}>·</span>
+            <span style={{ fontSize: "10px", color: "#8b90a5" }}>{material.lastUpdated}</span>
           </div>
 
           <p
             style={{
               fontSize: "11px",
-              color: "#6b7080",
+              color: "#a1a6b8",
               lineHeight: "1.5",
               margin: 0,
               display: "-webkit-box",
@@ -113,9 +113,9 @@ export function MaterialCard({ material, onSelect, isSelected, onDelete, isDelet
                   key={tag}
                   style={{
                     fontSize: "9.5px",
-                    color: "#7c80a0",
-                    backgroundColor: "#f0f1f8",
-                    border: "0.5px solid #e0e3ef",
+                    color: "#a1a6b8",
+                    backgroundColor: "#1a1d25",
+                    border: "0.5px solid #232733",
                     borderRadius: "4px",
                     padding: "1px 6px",
                   }}
@@ -141,13 +141,13 @@ export function MaterialCard({ material, onSelect, isSelected, onDelete, isDelet
               border: "none",
               background: "none",
               padding: "2px",
-              color: "#c0c4d6",
+              color: "#6b7080",
               cursor: isDeleting ? "wait" : "pointer",
             }}
           >
             {isDeleting ? <LoaderCircle size={13} /> : <Trash2 size={13} />}
           </button>
-          <Eye size={13} style={{ color: "#c0c4d6", flexShrink: 0 }} />
+          <Eye size={13} style={{ color: "#6b7080", flexShrink: 0 }} />
         </div>
       </div>
     </div>

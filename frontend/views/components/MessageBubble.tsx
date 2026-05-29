@@ -13,7 +13,7 @@ function renderContent(content: string) {
   const parts = content.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i} style={{ color: "#1e2035" }}>{part.slice(2, -2)}</strong>;
+      return <strong key={i} style={{ color: "#f3f4f9" }}>{part.slice(2, -2)}</strong>;
     }
     // Handle line breaks
     return part.split("\n").map((line, j, arr) => (
@@ -42,14 +42,14 @@ export function MessageBubble({ message, onFeedback }: MessageBubbleProps) {
         <div className="flex flex-col items-end">
           <span
             className="block mb-1.5"
-            style={{ fontSize: "10.5px", fontWeight: 500, color: "#b0b5c8" }}
+            style={{ fontSize: "10.5px", fontWeight: 500, color: "#6b7080" }}
           >
             Você · {formatTime(message.timestamp)}
           </span>
 
           <div
             className="rounded-xl rounded-tr-sm px-4 py-3"
-            style={{ backgroundColor: "#4f46e5" }}
+            style={{ backgroundColor: "#6366f1" }}
           >
             <p className="text-white" style={{ fontSize: "13.5px", lineHeight: "1.65", margin: 0 }}>
               {message.content}
@@ -78,21 +78,21 @@ export function MessageBubble({ message, onFeedback }: MessageBubbleProps) {
       <div
         className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5"
         style={{
-          backgroundColor: message.isError ? "#fef2f2" : "#eef2ff",
-          border: `0.5px solid ${message.isError ? "#fecaca" : "#c7d2fe"}`,
+          backgroundColor: message.isError ? "rgba(239, 68, 68, 0.15)" : "rgba(99, 102, 241, 0.18)",
+          border: `0.5px solid ${message.isError ? "rgba(239, 68, 68, 0.4)" : "rgba(99, 102, 241, 0.45)"}`,
         }}
       >
         {message.isError ? (
-          <AlertCircle size={11} style={{ color: "#dc2626" }} />
+          <AlertCircle size={11} style={{ color: "#fca5a5" }} />
         ) : (
-          <Sparkles size={11} style={{ color: "#4f46e5" }} />
+          <Sparkles size={11} style={{ color: "#a5b4fc" }} />
         )}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <span
           className="block mb-1.5"
-          style={{ fontSize: "10.5px", fontWeight: 500, color: "#b0b5c8" }}
+          style={{ fontSize: "10.5px", fontWeight: 500, color: "#6b7080" }}
         >
           DocAI · {formatTime(message.timestamp)}
         </span>
@@ -101,11 +101,11 @@ export function MessageBubble({ message, onFeedback }: MessageBubbleProps) {
         <div
           className="rounded-xl rounded-tl-sm px-4 py-3"
           style={{
-            backgroundColor: message.isError ? "#fff5f5" : "#f3f4f9",
-            border: `0.5px solid ${message.isError ? "#fecaca" : "#e5e7ef"}`,
+            backgroundColor: message.isError ? "rgba(239, 68, 68, 0.08)" : "#14171f",
+            border: `0.5px solid ${message.isError ? "rgba(239, 68, 68, 0.35)" : "#232733"}`,
           }}
         >
-          <div style={{ fontSize: "13.5px", color: "#1e2035", lineHeight: "1.7" }}>
+          <div style={{ fontSize: "13.5px", color: "#d8dbe6", lineHeight: "1.7" }}>
             {renderContent(message.content)}
           </div>
 
@@ -119,7 +119,7 @@ export function MessageBubble({ message, onFeedback }: MessageBubbleProps) {
         {/* Citations */}
         {message.citations && message.citations.length > 0 && (
           <div className="mt-2">
-            <p style={{ fontSize: "10.5px", fontWeight: 500, color: "#b0b5c8", marginBottom: "4px" }}>
+            <p style={{ fontSize: "10.5px", fontWeight: 500, color: "#6b7080", marginBottom: "4px" }}>
               Fontes consultadas
             </p>
             {message.citations.map((cit) => (

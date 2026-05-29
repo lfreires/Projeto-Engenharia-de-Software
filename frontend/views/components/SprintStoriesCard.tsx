@@ -2,9 +2,9 @@ import React from "react";
 import { SprintStory, StoryStatus } from "@/models/project";
 
 const STATUS_CONFIG: Record<StoryStatus, { label: string; color: string; bg: string; border: string }> = {
-  "Em andamento": { label: "Em andamento", color: "#a16207", bg: "#fefce8", border: "#fde68a" },
-  "Concluída":    { label: "Concluída",    color: "#166534", bg: "#f0fdf4", border: "#bbf7d0" },
-  "A fazer":      { label: "A fazer",      color: "#6b7280", bg: "#f8f9fc", border: "#e5e7eb" },
+  "Em andamento": { label: "Em andamento", color: "#fcd34d", bg: "rgba(202, 138, 4, 0.18)",   border: "rgba(202, 138, 4, 0.4)"   },
+  "Concluída":    { label: "Concluída",    color: "#86efac", bg: "rgba(34, 197, 94, 0.18)",   border: "rgba(34, 197, 94, 0.4)"   },
+  "A fazer":      { label: "A fazer",      color: "#a1a6b8", bg: "rgba(148, 163, 184, 0.15)", border: "rgba(148, 163, 184, 0.35)"},
 };
 
 interface SprintStoriesCardProps {
@@ -21,8 +21,8 @@ export function SprintStoriesCard({ stories }: SprintStoriesCardProps) {
             key={story.id}
             style={{
               borderRadius: "8px",
-              border: "0.5px solid #e5e8f0",
-              backgroundColor: "#fafbff",
+              border: "0.5px solid #232733",
+              backgroundColor: "#14171f",
               padding: "10px 12px",
             }}
           >
@@ -33,8 +33,8 @@ export function SprintStoriesCard({ stories }: SprintStoriesCardProps) {
                 style={{
                   fontSize: "10px",
                   fontWeight: 700,
-                  backgroundColor: "#eef2ff",
-                  color: "#4338ca",
+                  backgroundColor: "rgba(99, 102, 241, 0.18)",
+                  color: "#a5b4fc",
                   borderRadius: "4px",
                   padding: "1px 6px",
                 }}
@@ -42,7 +42,7 @@ export function SprintStoriesCard({ stories }: SprintStoriesCardProps) {
                 {story.id}
               </span>
 
-              <span style={{ fontSize: "13px", fontWeight: 600, color: "#1e2035", flex: 1 }}>
+              <span style={{ fontSize: "13px", fontWeight: 600, color: "#e6e8ee", flex: 1 }}>
                 {story.title}
               </span>
 
@@ -63,8 +63,8 @@ export function SprintStoriesCard({ stories }: SprintStoriesCardProps) {
                 <span
                   style={{
                     fontSize: "10px",
-                    color: "#a0a4b8",
-                    backgroundColor: "#f3f4f9",
+                    color: "#8b90a5",
+                    backgroundColor: "#1a1d25",
                     padding: "2px 6px",
                     borderRadius: "4px",
                   }}
@@ -74,7 +74,7 @@ export function SprintStoriesCard({ stories }: SprintStoriesCardProps) {
               </div>
             </div>
 
-            <p style={{ fontSize: "12px", color: "#6b7080", lineHeight: "1.5", margin: 0 }}>
+            <p style={{ fontSize: "12px", color: "#a1a6b8", lineHeight: "1.5", margin: 0 }}>
               {story.description}
             </p>
           </div>
